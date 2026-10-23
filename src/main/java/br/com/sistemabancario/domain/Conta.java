@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 import java.util.Objects;
 import java.util.UUID;
 
-/** Operações sequenciais. A sincronização e a atomicidade entre contas serão tratadas em etapa futura. */
+/** Conta bancária cujas alterações de saldo são sincronizadas na JVM. */
 public final class Conta {
     private final UUID identificador;
     private final Cliente titular;
@@ -27,14 +27,14 @@ public final class Conta {
 
     public UUID getIdentificador() { return identificador; }
     public Cliente getTitular() { return titular; }
-    public BigDecimal getSaldo() { return saldo; }
+    public synchronized BigDecimal getSaldo() { return saldo; }
 
-    public void depositar(BigDecimal valor) {
+    public synchronized void depositar(BigDecimal valor) {
         validarValorPositivo(valor);
         saldo = saldo.add(valor);
     }
 
-    public void sacar(BigDecimal valor) {
+    public synchronized void sacar(BigDecimal valor) {
         validarValorPositivo(valor);
         if (saldo.compareTo(valor) < 0) {
             throw new IllegalStateException("Saldo insuficiente para realizar o saque.");
@@ -47,11 +47,26 @@ public final class Conta {
         if (this == destino || identificador.equals(destino.identificador)) {
             throw new IllegalArgumentException("A conta de origem e destino devem ser diferentes.");
         }
+        if (identificador.compareTo(destino.identificador) < 0) {
+            synchronized (this) {
+                synchronized (destino) {
+                    transferirComBloqueios(destino, valor);
+                }
+            }
+        } else {
+            synchronized (destino) {
+                synchronized (this) {
+                    transferirComBloqueios(destino, valor);
+                }
+            }
+        }
+    }
+
+    private void transferirComBloqueios(Conta destino, BigDecimal valor) {
         validarValorPositivo(valor);
         if (saldo.compareTo(valor) < 0) {
             throw new IllegalStateException("Saldo insuficiente para realizar a transferência.");
         }
-        // As verificações ocorrem antes de qualquer alteração; não oferece atomicidade concorrente.
         saldo = saldo.subtract(valor);
         destino.saldo = destino.saldo.add(valor);
     }
@@ -63,7 +78,7 @@ public final class Conta {
         }
     }
 
-    private static void validarValorPositivo(BigDecimal valor) {
+    public static void validarValorPositivo(BigDecimal valor) {
         Objects.requireNonNull(valor, "O valor é obrigatório.");
         if (valor.signum() <= 0) {
             throw new IllegalArgumentException("O valor deve ser maior que zero.");
