@@ -31,10 +31,18 @@ public final class Main {
 
         SimuladorConcorrencia simulador = new SimuladorConcorrencia();
         var race = simulador.demonstrarRaceCondition(8);
-        var corrigido = simulador.depositosConcorrentes(banco, contaAna.getIdentificador(),
+
+        // Os movimentos artificiais da simulação ficam em outro arquivo SQLite e não entram no extrato demonstrativo.
+        ServicoBancario bancoSimulacao = new ServicoBancario(Path.of("target/simulacao-concorrencia.db"));
+        Conta contaSimulacaoA = bancoSimulacao.criarConta(
+                new Cliente("Simulação concorrente A"), new BigDecimal("100.00"));
+        Conta contaSimulacaoB = bancoSimulacao.criarConta(
+                new Cliente("Simulação concorrente B"), new BigDecimal("100.00"));
+        var corrigido = simulador.depositosConcorrentes(bancoSimulacao, contaSimulacaoA.getIdentificador(),
                 4, 5, new BigDecimal("0.01"));
-        var transferencias = simulador.transferenciasOpostas(banco, contaAna.getIdentificador(),
-                contaBruno.getIdentificador(), 10, new BigDecimal("0.01"));
+        var transferencias = simulador.transferenciasOpostas(bancoSimulacao,
+                contaSimulacaoA.getIdentificador(), contaSimulacaoB.getIdentificador(),
+                10, new BigDecimal("0.01"));
 
         Path relatorio = new RelatorioConcorrencia().exportar(race, Path.of("docs/relatorio-concorrencia.md"));
         Path extrato = new ExportadorExtrato(banco).exportar(
@@ -50,6 +58,7 @@ public final class Main {
         System.out.println("Saldo de " + bruno.getNome() + ": R$ " + contaBruno.getSaldo());
         System.out.println("Transações persistidas para Ana: " + banco.consultarExtrato(contaAna.getIdentificador()).size());
         System.out.println("Banco: " + banco.getArquivoBanco());
+        System.out.println("Banco isolado da simulação: " + bancoSimulacao.getArquivoBanco());
         System.out.println("Extrato: " + extrato);
         System.out.println("Relatório: " + relatorio);
     }

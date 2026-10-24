@@ -1,48 +1,8 @@
 EXTRATO BANCÁRIO
-Conta: 26028b7d-352a-4115-b9ce-be8c45e4066e
+Conta: dcea1a48-7937-4fd3-95c5-833638d8a923
 Titular: Ana Souza
-Saldo atual: R$ 900.20
+Saldo atual: R$ 900.00
 
-20/10/2026 23:34:23 | DEPOSITO | Crédito R$ 150.00 | Origem: 26028b7d-352a-4115-b9ce-be8c45e4066e | Destino: — | Resultado: CONCLUÍDA
-20/10/2026 23:34:23 | SAQUE | Débito R$ 50.00 | Origem: 26028b7d-352a-4115-b9ce-be8c45e4066e | Destino: — | Resultado: CONCLUÍDA
-20/10/2026 23:34:23 | TRANSFERENCIA | Débito R$ 200.00 | Origem: 26028b7d-352a-4115-b9ce-be8c45e4066e | Destino: c9095c28-aa7a-4136-9a97-e36e1473898d | Resultado: CONCLUÍDA
-20/10/2026 23:34:23 | DEPOSITO | Crédito R$ 0.01 | Origem: 26028b7d-352a-4115-b9ce-be8c45e4066e | Destino: — | Resultado: CONCLUÍDA
-20/10/2026 23:34:23 | DEPOSITO | Crédito R$ 0.01 | Origem: 26028b7d-352a-4115-b9ce-be8c45e4066e | Destino: — | Resultado: CONCLUÍDA
-20/10/2026 23:34:23 | DEPOSITO | Crédito R$ 0.01 | Origem: 26028b7d-352a-4115-b9ce-be8c45e4066e | Destino: — | Resultado: CONCLUÍDA
-20/10/2026 23:34:23 | DEPOSITO | Crédito R$ 0.01 | Origem: 26028b7d-352a-4115-b9ce-be8c45e4066e | Destino: — | Resultado: CONCLUÍDA
-20/10/2026 23:34:23 | DEPOSITO | Crédito R$ 0.01 | Origem: 26028b7d-352a-4115-b9ce-be8c45e4066e | Destino: — | Resultado: CONCLUÍDA
-20/10/2026 23:34:23 | DEPOSITO | Crédito R$ 0.01 | Origem: 26028b7d-352a-4115-b9ce-be8c45e4066e | Destino: — | Resultado: CONCLUÍDA
-20/10/2026 23:34:23 | DEPOSITO | Crédito R$ 0.01 | Origem: 26028b7d-352a-4115-b9ce-be8c45e4066e | Destino: — | Resultado: CONCLUÍDA
-20/10/2026 23:34:23 | DEPOSITO | Crédito R$ 0.01 | Origem: 26028b7d-352a-4115-b9ce-be8c45e4066e | Destino: — | Resultado: CONCLUÍDA
-20/10/2026 23:34:23 | DEPOSITO | Crédito R$ 0.01 | Origem: 26028b7d-352a-4115-b9ce-be8c45e4066e | Destino: — | Resultado: CONCLUÍDA
-20/10/2026 23:34:23 | DEPOSITO | Crédito R$ 0.01 | Origem: 26028b7d-352a-4115-b9ce-be8c45e4066e | Destino: — | Resultado: CONCLUÍDA
-20/10/2026 23:34:23 | DEPOSITO | Crédito R$ 0.01 | Origem: 26028b7d-352a-4115-b9ce-be8c45e4066e | Destino: — | Resultado: CONCLUÍDA
-20/10/2026 23:34:23 | DEPOSITO | Crédito R$ 0.01 | Origem: 26028b7d-352a-4115-b9ce-be8c45e4066e | Destino: — | Resultado: CONCLUÍDA
-20/10/2026 23:34:23 | DEPOSITO | Crédito R$ 0.01 | Origem: 26028b7d-352a-4115-b9ce-be8c45e4066e | Destino: — | Resultado: CONCLUÍDA
-20/10/2026 23:34:23 | DEPOSITO | Crédito R$ 0.01 | Origem: 26028b7d-352a-4115-b9ce-be8c45e4066e | Destino: — | Resultado: CONCLUÍDA
-20/10/2026 23:34:23 | DEPOSITO | Crédito R$ 0.01 | Origem: 26028b7d-352a-4115-b9ce-be8c45e4066e | Destino: — | Resultado: CONCLUÍDA
-20/10/2026 23:34:23 | DEPOSITO | Crédito R$ 0.01 | Origem: 26028b7d-352a-4115-b9ce-be8c45e4066e | Destino: — | Resultado: CONCLUÍDA
-20/10/2026 23:34:23 | DEPOSITO | Crédito R$ 0.01 | Origem: 26028b7d-352a-4115-b9ce-be8c45e4066e | Destino: — | Resultado: CONCLUÍDA
-20/10/2026 23:34:23 | DEPOSITO | Crédito R$ 0.01 | Origem: 26028b7d-352a-4115-b9ce-be8c45e4066e | Destino: — | Resultado: CONCLUÍDA
-20/10/2026 23:34:23 | DEPOSITO | Crédito R$ 0.01 | Origem: 26028b7d-352a-4115-b9ce-be8c45e4066e | Destino: — | Resultado: CONCLUÍDA
-20/10/2026 23:34:23 | DEPOSITO | Crédito R$ 0.01 | Origem: 26028b7d-352a-4115-b9ce-be8c45e4066e | Destino: — | Resultado: CONCLUÍDA
-20/10/2026 23:34:23 | TRANSFERENCIA | Débito R$ 0.01 | Origem: 26028b7d-352a-4115-b9ce-be8c45e4066e | Destino: c9095c28-aa7a-4136-9a97-e36e1473898d | Resultado: CONCLUÍDA
-20/10/2026 23:34:24 | TRANSFERENCIA | Débito R$ 0.01 | Origem: 26028b7d-352a-4115-b9ce-be8c45e4066e | Destino: c9095c28-aa7a-4136-9a97-e36e1473898d | Resultado: CONCLUÍDA
-20/10/2026 23:34:24 | TRANSFERENCIA | Crédito R$ 0.01 | Origem: c9095c28-aa7a-4136-9a97-e36e1473898d | Destino: 26028b7d-352a-4115-b9ce-be8c45e4066e | Resultado: CONCLUÍDA
-20/10/2026 23:34:24 | TRANSFERENCIA | Débito R$ 0.01 | Origem: 26028b7d-352a-4115-b9ce-be8c45e4066e | Destino: c9095c28-aa7a-4136-9a97-e36e1473898d | Resultado: CONCLUÍDA
-20/10/2026 23:34:24 | TRANSFERENCIA | Crédito R$ 0.01 | Origem: c9095c28-aa7a-4136-9a97-e36e1473898d | Destino: 26028b7d-352a-4115-b9ce-be8c45e4066e | Resultado: CONCLUÍDA
-20/10/2026 23:34:24 | TRANSFERENCIA | Débito R$ 0.01 | Origem: 26028b7d-352a-4115-b9ce-be8c45e4066e | Destino: c9095c28-aa7a-4136-9a97-e36e1473898d | Resultado: CONCLUÍDA
-20/10/2026 23:34:24 | TRANSFERENCIA | Crédito R$ 0.01 | Origem: c9095c28-aa7a-4136-9a97-e36e1473898d | Destino: 26028b7d-352a-4115-b9ce-be8c45e4066e | Resultado: CONCLUÍDA
-20/10/2026 23:34:24 | TRANSFERENCIA | Crédito R$ 0.01 | Origem: c9095c28-aa7a-4136-9a97-e36e1473898d | Destino: 26028b7d-352a-4115-b9ce-be8c45e4066e | Resultado: CONCLUÍDA
-20/10/2026 23:34:24 | TRANSFERENCIA | Crédito R$ 0.01 | Origem: c9095c28-aa7a-4136-9a97-e36e1473898d | Destino: 26028b7d-352a-4115-b9ce-be8c45e4066e | Resultado: CONCLUÍDA
-20/10/2026 23:34:24 | TRANSFERENCIA | Débito R$ 0.01 | Origem: 26028b7d-352a-4115-b9ce-be8c45e4066e | Destino: c9095c28-aa7a-4136-9a97-e36e1473898d | Resultado: CONCLUÍDA
-20/10/2026 23:34:24 | TRANSFERENCIA | Débito R$ 0.01 | Origem: 26028b7d-352a-4115-b9ce-be8c45e4066e | Destino: c9095c28-aa7a-4136-9a97-e36e1473898d | Resultado: CONCLUÍDA
-20/10/2026 23:34:24 | TRANSFERENCIA | Débito R$ 0.01 | Origem: 26028b7d-352a-4115-b9ce-be8c45e4066e | Destino: c9095c28-aa7a-4136-9a97-e36e1473898d | Resultado: CONCLUÍDA
-20/10/2026 23:34:24 | TRANSFERENCIA | Débito R$ 0.01 | Origem: 26028b7d-352a-4115-b9ce-be8c45e4066e | Destino: c9095c28-aa7a-4136-9a97-e36e1473898d | Resultado: CONCLUÍDA
-20/10/2026 23:34:24 | TRANSFERENCIA | Débito R$ 0.01 | Origem: 26028b7d-352a-4115-b9ce-be8c45e4066e | Destino: c9095c28-aa7a-4136-9a97-e36e1473898d | Resultado: CONCLUÍDA
-20/10/2026 23:34:24 | TRANSFERENCIA | Débito R$ 0.01 | Origem: 26028b7d-352a-4115-b9ce-be8c45e4066e | Destino: c9095c28-aa7a-4136-9a97-e36e1473898d | Resultado: CONCLUÍDA
-20/10/2026 23:34:24 | TRANSFERENCIA | Crédito R$ 0.01 | Origem: c9095c28-aa7a-4136-9a97-e36e1473898d | Destino: 26028b7d-352a-4115-b9ce-be8c45e4066e | Resultado: CONCLUÍDA
-20/10/2026 23:34:24 | TRANSFERENCIA | Crédito R$ 0.01 | Origem: c9095c28-aa7a-4136-9a97-e36e1473898d | Destino: 26028b7d-352a-4115-b9ce-be8c45e4066e | Resultado: CONCLUÍDA
-20/10/2026 23:34:24 | TRANSFERENCIA | Crédito R$ 0.01 | Origem: c9095c28-aa7a-4136-9a97-e36e1473898d | Destino: 26028b7d-352a-4115-b9ce-be8c45e4066e | Resultado: CONCLUÍDA
-20/10/2026 23:34:24 | TRANSFERENCIA | Crédito R$ 0.01 | Origem: c9095c28-aa7a-4136-9a97-e36e1473898d | Destino: 26028b7d-352a-4115-b9ce-be8c45e4066e | Resultado: CONCLUÍDA
-20/10/2026 23:34:24 | TRANSFERENCIA | Crédito R$ 0.01 | Origem: c9095c28-aa7a-4136-9a97-e36e1473898d | Destino: 26028b7d-352a-4115-b9ce-be8c45e4066e | Resultado: CONCLUÍDA
+24/10/2026 14:21:33 | DEPOSITO | Crédito R$ 150.00 | Origem: dcea1a48-7937-4fd3-95c5-833638d8a923 | Destino: — | Resultado: CONCLUÍDA
+24/10/2026 14:21:33 | SAQUE | Débito R$ 50.00 | Origem: dcea1a48-7937-4fd3-95c5-833638d8a923 | Destino: — | Resultado: CONCLUÍDA
+24/10/2026 14:21:33 | TRANSFERENCIA | Débito R$ 200.00 | Origem: dcea1a48-7937-4fd3-95c5-833638d8a923 | Destino: 6c19d2c6-6882-45c7-b32a-c9aa54f2f266 | Resultado: CONCLUÍDA

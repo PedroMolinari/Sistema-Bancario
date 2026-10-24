@@ -24,7 +24,7 @@ Na raiz do projeto:
 mvn clean compile exec:java
 ```
 
-A demonstração cria dados fictícios novos a cada execução. O banco padrão é `data/banco.db`. Para usar outro caminho:
+A demonstração cria contas fictícias novas a cada execução. As operações bancárias demonstrativas ficam no banco persistente `data/banco.db`; os depósitos e transferências artificiais da simulação concorrente ficam separados em `target/simulacao-concorrencia.db` e não aparecem no extrato de Ana. Para usar outro caminho para o banco principal:
 
 ```bash
 mvn -Dbanco.db.path=/caminho/para/banco.db exec:java
@@ -43,6 +43,7 @@ Os testes criam bancos SQLite temporários e independentes. Cobrem regras de con
 ## Banco e artefatos
 
 - Banco SQLite padrão: `data/banco.db` (pode ser configurado por `-Dbanco.db.path=...`).
+- Banco temporário da simulação concorrente: `target/simulacao-concorrencia.db`.
 - Script de tabelas: `src/main/resources/db/schema.sql`; é executado automaticamente na inicialização.
 - Extrato de exemplo: `docs/extrato-exemplo.txt`, gerado pela demonstração.
 - Relatório com o resultado observado da corrida: `docs/relatorio-concorrencia.md`, gerado pela demonstração. Ele não contém valores presumidos: o programa grava o saldo esperado e o efetivamente observado.
