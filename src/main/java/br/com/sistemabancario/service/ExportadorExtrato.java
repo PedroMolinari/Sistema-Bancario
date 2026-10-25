@@ -11,9 +11,9 @@ import java.util.UUID;
 
 public final class ExportadorExtrato {
     private static final DateTimeFormatter FORMATO_DATA = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
-    private final ServicoBancario banco;
+    private final ServicoBancarioPorta banco;
 
-    public ExportadorExtrato(ServicoBancario banco) { this.banco = banco; }
+    public ExportadorExtrato(ServicoBancarioPorta banco) { this.banco = banco; }
 
     public Path exportar(UUID contaId, Path arquivo) {
         var conta = banco.obterConta(contaId);

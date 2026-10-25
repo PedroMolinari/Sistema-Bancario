@@ -13,7 +13,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /** Regras de aplicação; persiste saldo e transação em um único commit antes de publicar a mudança em memória. */
-public final class ServicoBancario {
+public final class ServicoBancario implements ServicoBancarioPorta {
     private final BancoRepository repositorio;
     private final ConcurrentHashMap<UUID, Conta> contas = new ConcurrentHashMap<>();
 
@@ -110,6 +110,11 @@ public final class ServicoBancario {
     public List<Transacao> consultarExtrato(UUID contaId) {
         obterConta(contaId);
         return repositorio.listarTransacoes(contaId);
+    }
+
+    @Override
+    public Path exportarExtrato(UUID contaId, Path arquivo) {
+        return new ExportadorExtrato(this).exportar(contaId, arquivo);
     }
 
     public Path getArquivoBanco() { return repositorio.getConexaoBanco().getArquivo(); }

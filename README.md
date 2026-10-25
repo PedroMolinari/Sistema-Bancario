@@ -32,6 +32,16 @@ mvn -Dbanco.db.path=/caminho/para/banco.db exec:java
 
 O programa mostra depósito, saque, transferência, rejeição por saldo insuficiente, comparação da corrida controlada e depósitos/transferências concorrentes sincronizados. O cenário inseguro usa uma classe isolada e latches para garantir que as threads leiam o mesmo saldo antes de gravar.
 
+## Executar a interface gráfica Swing
+
+A interface é iniciada separadamente da demonstração de terminal e não cria contas nem executa operações automaticamente:
+
+```bash
+mvn -Dexec.mainClass=br.com.sistemabancario.ui.MainSwing exec:java
+```
+
+A janela usa o mesmo banco local `data/banco.db` (ou o caminho definido por `-Dbanco.db.path`). Na inicialização, a aplicação carrega o serviço e as contas em segundo plano; se o banco não puder ser aberto, apresenta o erro e não abre a janela principal. As consultas, operações bancárias e a exportação TXT também são executadas em segundo plano, com atualização Swing na EDT. O usuário confirma cada operação antes de enviá-la ao serviço.
+
 ## Testes
 
 ```bash
@@ -57,6 +67,7 @@ As contas e os clientes são persistidos. Cada depósito, saque ou transferênci
 - `repository/jdbc/`: conexão SQLite/JDBC e repositórios de clientes, contas e transações.
 - `simulacao/`: implementação insegura isolada e cenários concorrentes controlados.
 - `app/Main.java`: demonstração reproduzível pelo terminal.
+- `ui/MainSwing.java`, `ui/JanelaPrincipal.java` e painéis: aplicação desktop; `ui/ControladorBancario.java` encaminha os casos de uso sem dependência de Swing.
 - `src/test/java/`: testes unitários e de integração JUnit 5.
 
 ### Mapa dos requisitos do trabalho
