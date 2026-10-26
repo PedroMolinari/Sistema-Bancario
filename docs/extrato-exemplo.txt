@@ -1,8 +1,8 @@
 EXTRATO BANCÁRIO
-Conta: 67b3e315-ffc0-4062-9c16-267f9ccebe60
+Conta: 0759d50d-679b-4868-8fcc-c65b60f62949
 Titular: Ana Souza
 Saldo atual: R$ 900.00
 
-25/10/2026 16:49:20 | DEPOSITO | Crédito R$ 150.00 | Origem: 67b3e315-ffc0-4062-9c16-267f9ccebe60 | Destino: — | Resultado: CONCLUÍDA
-25/10/2026 16:49:20 | SAQUE | Débito R$ 50.00 | Origem: 67b3e315-ffc0-4062-9c16-267f9ccebe60 | Destino: — | Resultado: CONCLUÍDA
-25/10/2026 16:49:20 | TRANSFERENCIA | Débito R$ 200.00 | Origem: 67b3e315-ffc0-4062-9c16-267f9ccebe60 | Destino: cfdedaa0-bbc8-4111-9d5d-621e6d2e4333 | Resultado: CONCLUÍDA
+25/10/2026 18:12:36 | DEPOSITO | Crédito R$ 150.00 | Origem: 0759d50d-679b-4868-8fcc-c65b60f62949 | Destino: — | Resultado: CONCLUÍDA
+25/10/2026 18:12:36 | SAQUE | Débito R$ 50.00 | Origem: 0759d50d-679b-4868-8fcc-c65b60f62949 | Destino: — | Resultado: CONCLUÍDA
+25/10/2026 18:12:36 | TRANSFERENCIA | Débito R$ 200.00 | Origem: 0759d50d-679b-4868-8fcc-c65b60f62949 | Destino: 85ffc353-3e58-4787-934f-925136db316d | Resultado: CONCLUÍDA

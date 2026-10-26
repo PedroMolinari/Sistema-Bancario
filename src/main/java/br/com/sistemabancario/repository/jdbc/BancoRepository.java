@@ -38,6 +38,10 @@ public final class BancoRepository {
 
     public Optional<Conta> buscarConta(UUID id) { return contas.buscar(id); }
     public List<Conta> listarContas() { return contas.listar(); }
+    public boolean contaPossuiMovimentacoes(UUID id) { return contas.possuiMovimentacoes(id); }
+    public void excluirConta(UUID id) {
+        banco.emTransacao(conexao -> { contas.excluir(conexao, id); return null; });
+    }
     public List<Transacao> listarTransacoes(UUID contaId) { return transacoes.listarPorConta(contaId); }
 
     public void depositar(UUID contaId, java.math.BigDecimal anterior,

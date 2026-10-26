@@ -10,6 +10,7 @@ import org.junit.jupiter.api.io.TempDir;
 import java.math.BigDecimal;
 import java.nio.file.Path;
 import java.nio.file.Files;
+import java.util.List;
 import java.sql.Statement;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -102,6 +103,52 @@ class ServicoBancarioTest {
         assertTrue(conteudo.contains("Titular: Carla"));
         assertTrue(conteudo.contains("DEPOSITO | Crédito R$ 12.34"));
         assertTrue(conteudo.contains("Resultado: CONCLUÍDA"));
+    }
+
+    @Test
+    void excluiSomenteContaSemMovimentacoesEAtualizaConsultas() {
+        ServicoBancario banco = new ServicoBancario(diretorioTemporario.resolve("exclusao.db"));
+        Conta vazia = banco.criarConta(new Cliente("Livre"), BigDecimal.ZERO);
+        Conta movimentada = banco.criarConta(new Cliente("Movimentada"), BigDecimal.ZERO);
+        banco.depositar(movimentada.getIdentificador(), BigDecimal.ONE);
+        List<Conta> antes = banco.listarContas();
+
+        banco.excluirConta(vazia.getIdentificador());
+        assertEquals(1, banco.listarContas().size());
+        assertThrows(IllegalArgumentException.class, () -> banco.obterConta(vazia.getIdentificador()));
+        ServicoBancario recarregado = new ServicoBancario(banco.getArquivoBanco());
+        assertEquals(1, recarregado.listarContas().size());
+        assertThrows(IllegalArgumentException.class, () -> recarregado.obterConta(vazia.getIdentificador()));
+        assertThrows(IllegalStateException.class, () -> banco.excluirConta(movimentada.getIdentificador()));
+        assertEquals(1, banco.consultarExtrato(movimentada.getIdentificador()).size());
+        assertEquals(2, antes.size());
+    }
+
+    @Test
+    void exclusaoBloqueiaContasComSaqueEComoOrigemOuDestinoDaTransferencia() {
+        ServicoBancario banco = new ServicoBancario(diretorioTemporario.resolve("exclusao-mov.db"));
+        Conta saque = banco.criarConta(new Cliente("Saque"), BigDecimal.TEN);
+        Conta origem = banco.criarConta(new Cliente("Origem"), BigDecimal.TEN);
+        Conta destino = banco.criarConta(new Cliente("Destino"), BigDecimal.ZERO);
+        banco.sacar(saque.getIdentificador(), BigDecimal.ONE);
+        banco.transferir(origem.getIdentificador(), destino.getIdentificador(), BigDecimal.ONE);
+
+        assertThrows(IllegalStateException.class, () -> banco.excluirConta(saque.getIdentificador()));
+        assertThrows(IllegalStateException.class, () -> banco.excluirConta(origem.getIdentificador()));
+        assertThrows(IllegalStateException.class, () -> banco.excluirConta(destino.getIdentificador()));
+        assertEquals(1, banco.consultarExtrato(saque.getIdentificador()).size());
+        assertEquals(1, banco.consultarExtrato(origem.getIdentificador()).size());
+        assertEquals(1, banco.consultarExtrato(destino.getIdentificador()).size());
+        assertEquals(3, banco.listarContas().size());
+    }
+
+    @Test
+    void identificadoresCurtosSaoEstaveisEDistintos() {
+        Conta a = new Conta(new Cliente("A"), BigDecimal.ZERO);
+        Conta b = new Conta(new Cliente("B"), BigDecimal.ZERO);
+        assertEquals(a.getIdentificadorCurto(), a.getIdentificadorCurto());
+        assertNotEquals(a.getIdentificadorCurto(), b.getIdentificadorCurto());
+        assertTrue(a.getIdentificadorCurto().length() <= 25);
     }
 
     private static void assertSaldo(String esperado, Conta conta) {

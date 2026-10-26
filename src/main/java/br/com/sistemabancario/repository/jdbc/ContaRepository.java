@@ -44,6 +44,33 @@ public final class ContaRepository {
         }
     }
 
+    void excluir(Connection conexao, UUID id) throws SQLException {
+        try (PreparedStatement historico = conexao.prepareStatement(
+                "SELECT 1 FROM transacao WHERE conta_origem = ? OR conta_destino = ? LIMIT 1")) {
+            historico.setString(1, id.toString());
+            historico.setString(2, id.toString());
+            try (ResultSet resultado = historico.executeQuery()) {
+                if (resultado.next()) throw new IllegalStateException(
+                        "Esta conta não pode ser excluída porque possui movimentações registradas.");
+            }
+        }
+        try (PreparedStatement comando = conexao.prepareStatement("DELETE FROM conta WHERE id = ?")) {
+            comando.setString(1, id.toString());
+            if (comando.executeUpdate() != 1) throw new SQLException("Conta inexistente: " + id);
+        }
+    }
+
+    boolean possuiMovimentacoes(UUID id) {
+        try (Connection conexao = banco.abrir(); PreparedStatement comando = conexao.prepareStatement(
+                "SELECT 1 FROM transacao WHERE conta_origem = ? OR conta_destino = ? LIMIT 1")) {
+            comando.setString(1, id.toString());
+            comando.setString(2, id.toString());
+            try (ResultSet resultado = comando.executeQuery()) { return resultado.next(); }
+        } catch (SQLException e) {
+            throw new PersistenciaException("Não foi possível validar as movimentações da conta.", e);
+        }
+    }
+
     public Optional<Conta> buscar(UUID id) {
         try (Connection conexao = banco.abrir()) { return buscar(conexao, id); }
         catch (SQLException e) { throw new PersistenciaException("Não foi possível consultar a conta.", e); }

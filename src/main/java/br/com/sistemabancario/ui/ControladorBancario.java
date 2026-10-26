@@ -30,6 +30,8 @@ public final class ControladorBancario {
         return servico.criarConta(cliente, saldoInicial);
     }
 
+    public void excluirConta(UUID id) { servico.excluirConta(id); }
+
     public Transacao depositar(UUID contaId, BigDecimal valor) {
         return servico.depositar(contaId, valor);
     }

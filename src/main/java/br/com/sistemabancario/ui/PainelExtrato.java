@@ -3,8 +3,12 @@ package br.com.sistemabancario.ui;
 import br.com.sistemabancario.domain.Conta;
 import br.com.sistemabancario.domain.Transacao;
 import java.awt.BorderLayout;
-import java.awt.Font;
+import java.awt.CardLayout;
 import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.format.DateTimeFormatter;
@@ -16,40 +20,45 @@ import javax.swing.BorderFactory;
 import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
-import javax.swing.table.AbstractTableModel;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.table.AbstractTableModel;
 
 final class PainelExtrato extends JPanel {
+    private static final String DADOS = "dados";
+    private static final String VAZIO = "vazio";
     private static final DateTimeFormatter DATA_HORA = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
     private final JComboBox<Conta> contas = new JComboBox<>();
     private final ModeloTransacoes modelo = new ModeloTransacoes();
     private final Consumer<Conta> consultar;
     private final BiConsumer<Conta, Path> exportar;
     private final JLabel estado = new JLabel("Selecione uma conta e consulte o extrato.");
+    private final JPanel cartoesTabela = new JPanel(new CardLayout());
 
     PainelExtrato(Consumer<Conta> consultar, BiConsumer<Conta, Path> exportar) {
-        super(new BorderLayout(0, 16));
+        super(new BorderLayout(0, 22));
         this.consultar = consultar;
         this.exportar = exportar;
         setOpaque(false);
-        add(titulo(), BorderLayout.NORTH);
-        JTable tabela = new JTable(modelo);
-        tabela.setRowHeight(30);
-        tabela.setFillsViewportHeight(true);
-        tabela.getTableHeader().setFont(new Font(Font.SANS_SERIF, Font.BOLD, 13));
-        tabela.getTableHeader().setReorderingAllowed(false);
-        JScrollPane rolagem = new JScrollPane(tabela);
-        rolagem.setBorder(BorderFactory.createLineBorder(EstiloSwing.BORDA));
-        JPanel corpo = new JPanel(new BorderLayout(0, 10));
+        add(EstiloSwing.cabecalhoTela("Extrato bancário",
+                "Consulte as movimentações registradas e exporte o histórico em arquivo TXT."), BorderLayout.NORTH);
+
+        JPanel corpo = new JPanel(new GridBagLayout());
         corpo.setOpaque(false);
-        corpo.add(barraAcoes(), BorderLayout.NORTH);
-        corpo.add(rolagem, BorderLayout.CENTER);
+        GridBagConstraints c = new GridBagConstraints();
+        c.gridx = 0; c.gridy = 0; c.weightx = 1; c.fill = GridBagConstraints.HORIZONTAL;
+        c.insets = new Insets(0, 0, 16, 0);
+        corpo.add(cartaoSelecao(), c);
+        c.gridy = 1; c.weighty = 1; c.fill = GridBagConstraints.BOTH;
+        c.insets = new Insets(0, 0, 12, 0);
+        corpo.add(cartaoTabela(), c);
+        c.gridy = 2; c.weighty = 0; c.fill = GridBagConstraints.HORIZONTAL;
+        c.insets = new Insets(0, 0, 0, 0);
+        estado.setFont(EstiloSwing.FONTE_CORPO);
         estado.setForeground(EstiloSwing.SECUNDARIO);
-        corpo.add(estado, BorderLayout.SOUTH);
+        corpo.add(estado, c);
         add(corpo, BorderLayout.CENTER);
     }
 
@@ -72,65 +81,94 @@ final class PainelExtrato extends JPanel {
 
     void definirTransacoes(List<Transacao> transacoes) {
         modelo.definirTransacoes(transacoes);
-        estado.setText(transacoes.isEmpty() ? "Nenhuma transação registrada para esta conta." : "Transações carregadas: " + transacoes.size());
+        CardLayout cards = (CardLayout) cartoesTabela.getLayout();
+        cards.show(cartoesTabela, transacoes.isEmpty() ? VAZIO : DADOS);
+        estado.setText(transacoes.isEmpty() ? "Nenhuma transação registrada para esta conta."
+                : "Movimentações carregadas: " + transacoes.size());
     }
 
-    private JPanel barraAcoes() {
-        JPanel barra = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        barra.setOpaque(true);
-        barra.setBackground(java.awt.Color.WHITE);
+    private JPanel cartaoSelecao() {
+        JPanel cartao = new JPanel(new GridBagLayout());
+        EstiloSwing.cartao(cartao);
+        GridBagConstraints c = new GridBagConstraints();
+        c.gridx = 0; c.gridy = 0; c.anchor = GridBagConstraints.WEST;
+        c.insets = new Insets(0, 0, 0, 14);
+        cartao.add(EstiloSwing.rotuloCampo("Conta"), c);
         EstiloSwing.contas(contas);
-        contas.setPreferredSize(new java.awt.Dimension(440, 38));
-        barra.add(new JLabel("Conta"));
-        barra.add(contas);
+        c.gridx = 1; c.fill = GridBagConstraints.HORIZONTAL; c.weightx = 1;
+        cartao.add(contas, c);
         var atualizar = EstiloSwing.botao("Consultar extrato", true);
         atualizar.addActionListener(evento -> {
             Conta conta = contaSelecionada();
             if (conta == null) {
-                JOptionPane.showMessageDialog(this, "Selecione uma conta.", "Conta necessária", JOptionPane.WARNING_MESSAGE);
+                DialogoConfirmacao.aviso(this, "Conta necessária", "Selecione uma conta.");
                 return;
             }
             consultar.accept(conta);
         });
-        barra.add(atualizar);
+        c.gridx = 2; c.fill = GridBagConstraints.NONE; c.weightx = 0; c.insets = new Insets(0, 12, 0, 0);
+        cartao.add(atualizar, c);
         var salvar = EstiloSwing.botao("Exportar TXT", false);
         salvar.addActionListener(evento -> escolherDestino());
-        barra.add(salvar);
-        return barra;
+        c.gridx = 3; c.insets = new Insets(0, 8, 0, 0);
+        cartao.add(salvar, c);
+        return cartao;
+    }
+
+    private JPanel cartaoTabela() {
+        JPanel cartao = new JPanel(new BorderLayout(0, 14));
+        EstiloSwing.cartao(cartao);
+        JPanel titulo = new JPanel(new BorderLayout());
+        titulo.setOpaque(false);
+        JLabel rotulo = new JLabel("Movimentações da conta");
+        rotulo.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 17));
+        rotulo.setForeground(EstiloSwing.TEXTO);
+        titulo.add(rotulo, BorderLayout.WEST);
+        cartao.add(titulo, BorderLayout.NORTH);
+
+        JTable tabela = new JTable(modelo);
+        EstiloSwing.tabela(tabela);
+        tabela.setAutoResizeMode(JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS);
+        tabela.getColumnModel().getColumn(0).setPreferredWidth(155);
+        tabela.getColumnModel().getColumn(1).setPreferredWidth(150);
+        tabela.getColumnModel().getColumn(2).setPreferredWidth(145);
+        tabela.getColumnModel().getColumn(3).setPreferredWidth(270);
+        tabela.getColumnModel().getColumn(4).setPreferredWidth(270);
+        JScrollPane rolagem = new JScrollPane(tabela);
+        rolagem.setBorder(BorderFactory.createLineBorder(EstiloSwing.BORDA));
+        cartoesTabela.add(rolagem, DADOS);
+        JLabel vazio = new JLabel("Nenhuma movimentação para exibir. Consulte o extrato de uma conta.", JLabel.CENTER);
+        vazio.setFont(EstiloSwing.FONTE_CORPO);
+        vazio.setForeground(EstiloSwing.SECUNDARIO);
+        vazio.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(EstiloSwing.BORDA),
+                BorderFactory.createEmptyBorder(38, 22, 38, 22)));
+        cartoesTabela.add(vazio, VAZIO);
+        ((CardLayout) cartoesTabela.getLayout()).show(cartoesTabela, VAZIO);
+        cartao.add(cartoesTabela, BorderLayout.CENTER);
+        return cartao;
     }
 
     private void escolherDestino() {
         Conta conta = contaSelecionada();
         if (conta == null) {
-            JOptionPane.showMessageDialog(this, "Selecione uma conta para exportar o extrato.", "Conta necessária", JOptionPane.WARNING_MESSAGE);
+            DialogoConfirmacao.aviso(this, "Conta necessária", "Selecione uma conta para exportar o extrato.");
             return;
         }
         JFileChooser seletor = new JFileChooser();
         seletor.setDialogTitle("Exportar extrato em TXT");
         seletor.setFileFilter(new FileNameExtensionFilter("Arquivo de texto (*.txt)", "txt"));
-        seletor.setSelectedFile(Path.of("extrato-" + conta.getIdentificador().toString().substring(0, 8) + ".txt").toFile());
+        seletor.setSelectedFile(Path.of("extrato-" + conta.getIdentificadorCurto() + ".txt").toFile());
         if (seletor.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) return;
         Path arquivo = seletor.getSelectedFile().toPath();
         if (!arquivo.getFileName().toString().toLowerCase(java.util.Locale.ROOT).endsWith(".txt")) {
             arquivo = arquivo.resolveSibling(arquivo.getFileName() + ".txt");
         }
-        if (Files.exists(arquivo) && JOptionPane.showConfirmDialog(this,
-                "O arquivo já existe. Deseja substituí-lo?", "Confirmar sobrescrita",
-                JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE) != JOptionPane.YES_OPTION) return;
+        if (Files.exists(arquivo) && !DialogoConfirmacao.confirmar(this, "Substituir arquivo",
+                "O arquivo já existe. Deseja substituí-lo?", "Substituir", true)) return;
         exportar.accept(conta, arquivo);
     }
 
     private Conta contaSelecionada() { return (Conta) contas.getSelectedItem(); }
-
-    private JPanel titulo() {
-        JPanel painel = new JPanel(new BorderLayout());
-        painel.setOpaque(false);
-        JLabel rotulo = new JLabel("Extrato bancário");
-        rotulo.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 24));
-        rotulo.setForeground(EstiloSwing.TEXTO);
-        painel.add(rotulo, BorderLayout.WEST);
-        return painel;
-    }
 
     private static final class ModeloTransacoes extends AbstractTableModel {
         private final String[] colunas = {"Data e hora", "Tipo", "Valor", "Origem", "Destino"};
@@ -150,8 +188,9 @@ final class PainelExtrato extends JPanel {
                 case 0 -> transacao.dataHora().format(DATA_HORA);
                 case 1 -> transacao.tipo();
                 case 2 -> EstiloSwing.moeda(transacao.valor());
-                case 3 -> transacao.contaOrigem().toString();
-                case 4 -> transacao.contaDestino() == null ? "—" : transacao.contaDestino().toString();
+                case 3 -> Conta.formatarIdentificador(transacao.contaOrigem());
+                case 4 -> transacao.contaDestino() == null ? "—"
+                        : Conta.formatarIdentificador(transacao.contaDestino());
                 default -> throw new IndexOutOfBoundsException(coluna);
             };
         }

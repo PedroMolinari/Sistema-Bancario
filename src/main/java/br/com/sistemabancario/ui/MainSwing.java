@@ -8,7 +8,6 @@ import java.util.concurrent.ExecutionException;
 import javax.swing.BorderFactory;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
@@ -68,8 +67,7 @@ public final class MainSwing {
     private static void falhaInicializacao(Throwable erro) {
         String detalhe = erro == null || erro.getMessage() == null
                 ? "Erro sem detalhes disponíveis." : erro.getMessage();
-        JOptionPane.showMessageDialog(null,
-                "Não foi possível inicializar o banco local. A interface não será aberta.\n\n" + detalhe,
-                "Falha na inicialização", JOptionPane.ERROR_MESSAGE);
+        DialogoConfirmacao.erro(null, "Falha na inicialização",
+                "Não foi possível inicializar o banco local. A interface não será aberta.\n\n" + detalhe);
     }
 }

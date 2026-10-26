@@ -16,6 +16,8 @@ public interface ServicoBancarioPorta {
 
     Conta criarConta(Cliente cliente, BigDecimal saldoInicial);
 
+    void excluirConta(UUID id);
+
     Transacao depositar(UUID contaId, BigDecimal valor);
 
     Transacao sacar(UUID contaId, BigDecimal valor);

@@ -35,6 +35,19 @@ public final class ServicoBancario implements ServicoBancarioPorta {
         return conta;
     }
 
+    @Override
+    public void excluirConta(UUID id) {
+        Conta conta = obterConta(id);
+        synchronized (conta) {
+            if (repositorio.contaPossuiMovimentacoes(id)) {
+                throw new IllegalStateException(
+                        "Esta conta não pode ser excluída porque possui movimentações registradas.");
+            }
+            repositorio.excluirConta(id);
+            contas.remove(id, conta);
+        }
+    }
+
     public Conta obterConta(UUID id) {
         Conta existente = contas.get(id);
         if (existente != null) return existente;

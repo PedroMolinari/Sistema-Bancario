@@ -10,8 +10,8 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 import javax.swing.JComboBox;
+import javax.swing.BorderFactory;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
@@ -24,45 +24,58 @@ final class PainelTransferencia extends JPanel {
     private final JTextField valor = new JTextField(24);
 
     PainelTransferencia(AcaoTransferencia transferir) {
-        super(new BorderLayout(0, 20));
+        super(new BorderLayout(0, 22));
         setOpaque(false);
-        JLabel titulo = new JLabel("Transferência");
-        titulo.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 24));
-        titulo.setForeground(EstiloSwing.TEXTO);
-        add(titulo, BorderLayout.NORTH);
+        add(EstiloSwing.cabecalhoTela("Transferência",
+                "Escolha as contas e revise os dados antes de confirmar a movimentação."), BorderLayout.NORTH);
         JPanel formulario = new JPanel(new GridBagLayout());
-        formulario.setBackground(java.awt.Color.WHITE);
-        formulario.setBorder(javax.swing.BorderFactory.createEmptyBorder(24, 26, 24, 26));
+        EstiloSwing.cartao(formulario);
         EstiloSwing.contas(origem);
         EstiloSwing.contas(destino);
         EstiloSwing.campo(valor);
+        valor.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 24));
+        valor.setPreferredSize(new java.awt.Dimension(300, 60));
         GridBagConstraints c = new GridBagConstraints();
-        c.gridx = 0; c.gridy = 0; c.anchor = GridBagConstraints.WEST; c.insets = new Insets(0, 0, 7, 12);
-        formulario.add(new JLabel("Conta de origem"), c);
+        c.gridx = 0; c.gridy = 0; c.gridwidth = 2; c.anchor = GridBagConstraints.WEST;
+        c.fill = GridBagConstraints.HORIZONTAL; c.weightx = 1; c.insets = new Insets(2, 0, 20, 0);
+        JLabel tituloBloco = new JLabel("Dados da transferência");
+        tituloBloco.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 17));
+        tituloBloco.setForeground(EstiloSwing.TEXTO);
+        formulario.add(tituloBloco, c);
+        c.gridwidth = 1; c.gridy = 1; c.anchor = GridBagConstraints.WEST;
+        c.fill = GridBagConstraints.NONE; c.weightx = 0; c.insets = new Insets(0, 0, 8, 18);
+        formulario.add(EstiloSwing.rotuloCampo("Conta de origem"), c);
         c.gridx = 1; c.fill = GridBagConstraints.HORIZONTAL; c.weightx = 1;
         formulario.add(origem, c);
-        c.gridx = 0; c.gridy = 1; c.fill = GridBagConstraints.NONE; c.weightx = 0;
-        c.insets = new Insets(14, 0, 7, 12);
-        formulario.add(new JLabel("Conta de destino"), c);
+        c.gridx = 0; c.gridy = 2; c.fill = GridBagConstraints.NONE; c.weightx = 0;
+        c.insets = new Insets(15, 0, 8, 18);
+        formulario.add(EstiloSwing.rotuloCampo("Conta de destino"), c);
         c.gridx = 1; c.fill = GridBagConstraints.HORIZONTAL; c.weightx = 1;
         formulario.add(destino, c);
-        c.gridx = 0; c.gridy = 2; c.fill = GridBagConstraints.NONE; c.weightx = 0;
-        c.insets = new Insets(14, 0, 7, 12);
-        formulario.add(new JLabel("Valor (R$)"), c);
+        c.gridx = 0; c.gridy = 3; c.fill = GridBagConstraints.NONE; c.weightx = 0;
+        c.insets = new Insets(15, 0, 8, 18);
+        formulario.add(EstiloSwing.rotuloCampo("Valor (R$)"), c);
         c.gridx = 1; c.fill = GridBagConstraints.HORIZONTAL; c.weightx = 1;
         formulario.add(valor, c);
+        JLabel dica = new JLabel("Após revisar origem, destino e valor, confirme a transferência.");
+        dica.setForeground(EstiloSwing.SECUNDARIO);
+        dica.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(EstiloSwing.AZUL_CLARO),
+                BorderFactory.createEmptyBorder(12, 14, 12, 14)));
+        dica.setBackground(new java.awt.Color(246, 250, 255));
+        dica.setOpaque(true);
+        c.gridx = 1; c.gridy = 4; c.insets = new Insets(9, 0, 0, 0);
+        formulario.add(dica, c);
         var botao = EstiloSwing.botao("Revisar e transferir", true);
         botao.addActionListener(evento -> {
             Conta contaOrigem = (Conta) origem.getSelectedItem();
             Conta contaDestino = (Conta) destino.getSelectedItem();
             if (contaOrigem == null || contaDestino == null) {
-                JOptionPane.showMessageDialog(this, "São necessárias duas contas cadastradas.",
-                        "Contas necessárias", JOptionPane.WARNING_MESSAGE);
+                DialogoConfirmacao.aviso(this, "Contas necessárias", "São necessárias duas contas cadastradas.");
                 return;
             }
             if (contaOrigem.getIdentificador().equals(contaDestino.getIdentificador())) {
-                JOptionPane.showMessageDialog(this, "A origem e o destino devem ser contas diferentes.",
-                        "Transferência inválida", JOptionPane.WARNING_MESSAGE);
+                DialogoConfirmacao.aviso(this, "Transferência inválida",
+                        "A origem e o destino devem ser contas diferentes.");
                 return;
             }
             BigDecimal montante;
@@ -70,22 +83,29 @@ final class PainelTransferencia extends JPanel {
                 montante = PainelCadastroConta.lerValor(valor.getText());
                 if (montante.signum() <= 0) throw new NumberFormatException("O valor deve ser positivo");
             } catch (NumberFormatException erro) {
-                JOptionPane.showMessageDialog(this, "Informe um valor maior que zero.", "Validação", JOptionPane.WARNING_MESSAGE);
+                DialogoConfirmacao.aviso(this, "Valor inválido", "Informe um valor maior que zero.");
                 valor.requestFocusInWindow();
                 return;
             }
             String revisao = "Revise a transferência:\n\nOrigem: " + contaOrigem.getTitular().getNome()
-                    + " (" + contaOrigem.getIdentificador() + ")\nDestino: "
-                    + contaDestino.getTitular().getNome() + " (" + contaDestino.getIdentificador()
+                    + " (" + contaOrigem.getIdentificadorCurto() + ")\nDestino: "
+                    + contaDestino.getTitular().getNome() + " (" + contaDestino.getIdentificadorCurto()
                     + ")\nValor: " + EstiloSwing.moeda(montante) + "\n\nConfirmar operação?";
-            if (JOptionPane.showConfirmDialog(this, revisao, "Revisão da transferência",
-                    JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE) == JOptionPane.YES_OPTION) {
+            if (DialogoConfirmacao.confirmar(this, "Revisar transferência", revisao,
+                    "Confirmar transferência", false)) {
                 transferir.executar(contaOrigem, contaDestino, montante);
             }
         });
-        c.gridx = 1; c.gridy = 3; c.anchor = GridBagConstraints.WEST; c.fill = GridBagConstraints.NONE;
-        c.insets = new Insets(20, 0, 0, 0);
-        formulario.add(botao, c);
+        JPanel barra = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 0, 0));
+        barra.setOpaque(false);
+        barra.add(botao);
+        c.gridx = 0; c.gridy = 5; c.gridwidth = 2; c.anchor = GridBagConstraints.EAST;
+        c.fill = GridBagConstraints.HORIZONTAL; c.insets = new Insets(22, 0, 0, 0);
+        formulario.add(barra, c);
+        c.gridy = 6; c.weighty = 1; c.fill = GridBagConstraints.VERTICAL;
+        JPanel expansor = new JPanel();
+        expansor.setOpaque(false);
+        formulario.add(expansor, c);
         add(formulario, BorderLayout.CENTER);
     }
 

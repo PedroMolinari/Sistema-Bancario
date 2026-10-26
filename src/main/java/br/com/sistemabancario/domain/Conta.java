@@ -26,6 +26,16 @@ public final class Conta {
     }
 
     public UUID getIdentificador() { return identificador; }
+    /** Forma compacta e reversível do UUID, estável e sem colisões entre contas. */
+    public String getIdentificadorCurto() {
+        return formatarIdentificador(identificador);
+    }
+    public static String formatarIdentificador(UUID identificador) {
+        java.util.Objects.requireNonNull(identificador, "O identificador é obrigatório.");
+        return new java.math.BigInteger(1, java.nio.ByteBuffer.allocate(16)
+                .putLong(identificador.getMostSignificantBits())
+                .putLong(identificador.getLeastSignificantBits()).array()).toString(36);
+    }
     public Cliente getTitular() { return titular; }
     public synchronized BigDecimal getSaldo() { return saldo; }
 

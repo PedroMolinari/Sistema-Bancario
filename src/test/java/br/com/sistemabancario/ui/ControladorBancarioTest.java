@@ -150,6 +150,8 @@ class ControladorBancarioTest {
             return conta;
         }
 
+        @Override public void excluirConta(UUID id) { idConsultado = id; }
+
         @Override
         public Transacao depositar(UUID contaId, BigDecimal valor) {
             idRecebido = contaId;
