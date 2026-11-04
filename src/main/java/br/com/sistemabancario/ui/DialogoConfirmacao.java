@@ -26,9 +26,9 @@ final class DialogoConfirmacao {
     private static final Pattern UUID_TEXTO = Pattern.compile(
             "(?i)(?<![0-9a-f])[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![0-9a-f])");
     private enum TipoMensagem {
-        SUCESSO("✓", new Color(37, 110, 83), new Color(231, 245, 238)),
-        AVISO("!", new Color(152, 97, 22), new Color(255, 247, 230)),
-        ERRO("×", new Color(174, 58, 64), new Color(255, 238, 237)),
+        SUCESSO("✓", EstiloSwing.SUCESSO, new Color(235, 246, 239)),
+        AVISO("!", EstiloSwing.AVISO, new Color(255, 247, 232)),
+        ERRO("×", EstiloSwing.ERRO, new Color(253, 238, 239)),
         INFORMACAO("i", EstiloSwing.AZUL, EstiloSwing.AZUL_CLARO);
 
         private final String simbolo;
@@ -74,7 +74,7 @@ final class DialogoConfirmacao {
                 BorderFactory.createEmptyBorder(0, 0, 18, 0)));
 
         JPanel cabecalho = new JPanel(new BorderLayout());
-        cabecalho.setBackground(destrutiva ? new Color(255, 244, 243) : EstiloSwing.AZUL_CLARO);
+        cabecalho.setBackground(destrutiva ? new Color(253, 238, 239) : EstiloSwing.AZUL_CLARO);
         cabecalho.setBorder(BorderFactory.createEmptyBorder(18, 22, 16, 22));
         JLabel tituloLabel = new JLabel(titulo);
         tituloLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 19));
@@ -82,11 +82,11 @@ final class DialogoConfirmacao {
         cabecalho.add(tituloLabel, BorderLayout.CENTER);
         conteudo.add(cabecalho, BorderLayout.NORTH);
 
-        JLabel texto = new JLabel("<html><div style='width: 390px'>"
+        JLabel texto = new JLabel("<html><div style='width: 290px'>"
                 + escapar(formatarIds(mensagem)).replace("\n", "<br>") + "</div></html>");
         texto.setFont(EstiloSwing.FONTE_CORPO);
         texto.setForeground(EstiloSwing.TEXTO);
-        texto.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 22));
+        texto.setBorder(BorderFactory.createEmptyBorder(0, 16, 0, 16));
         conteudo.add(texto, BorderLayout.CENTER);
 
         JButton cancelar = EstiloSwing.botao("Cancelar", false);
@@ -108,7 +108,7 @@ final class DialogoConfirmacao {
 
         JPanel botoes = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         botoes.setOpaque(false);
-        botoes.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 22));
+        botoes.setBorder(BorderFactory.createEmptyBorder(0, 16, 0, 16));
         botoes.add(cancelar);
         botoes.add(confirmar);
         conteudo.add(botoes, BorderLayout.SOUTH);
@@ -118,7 +118,7 @@ final class DialogoConfirmacao {
         dialogo.getRootPane().registerKeyboardAction(evento -> dialogo.dispose(),
                 KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
                 javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW);
-        dialogo.setMinimumSize(new Dimension(470, 190));
+        dialogo.setMinimumSize(new Dimension(340, 190));
         dialogo.pack();
         dialogo.setLocationRelativeTo(pai);
         dialogo.setVisible(true);
@@ -156,11 +156,11 @@ final class DialogoConfirmacao {
         cabecalho.add(identidade, BorderLayout.CENTER);
         conteudo.add(cabecalho, BorderLayout.NORTH);
 
-        JLabel texto = new JLabel("<html><div style='width: 390px'>"
+        JLabel texto = new JLabel("<html><div style='width: 290px'>"
                 + escapar(formatarIds(mensagem)).replace("\n", "<br>") + "</div></html>");
         texto.setFont(EstiloSwing.FONTE_CORPO);
         texto.setForeground(EstiloSwing.TEXTO);
-        texto.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 22));
+        texto.setBorder(BorderFactory.createEmptyBorder(0, 16, 0, 16));
         conteudo.add(texto, BorderLayout.CENTER);
 
         JButton fechar = EstiloSwing.botao("Fechar", true);
@@ -168,7 +168,7 @@ final class DialogoConfirmacao {
         fechar.addActionListener(evento -> dialogo.dispose());
         JPanel botoes = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
         botoes.setOpaque(false);
-        botoes.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 22));
+        botoes.setBorder(BorderFactory.createEmptyBorder(0, 16, 0, 16));
         botoes.add(fechar);
         conteudo.add(botoes, BorderLayout.SOUTH);
 
@@ -177,7 +177,7 @@ final class DialogoConfirmacao {
         dialogo.getRootPane().registerKeyboardAction(evento -> dialogo.dispose(),
                 KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
                 javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW);
-        dialogo.setMinimumSize(new Dimension(470, 190));
+        dialogo.setMinimumSize(new Dimension(340, 190));
         dialogo.pack();
         dialogo.setLocationRelativeTo(pai);
         dialogo.setVisible(true);

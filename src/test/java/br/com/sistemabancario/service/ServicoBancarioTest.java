@@ -5,6 +5,7 @@ import br.com.sistemabancario.domain.Conta;
 import br.com.sistemabancario.exception.PersistenciaException;
 import br.com.sistemabancario.repository.jdbc.ConexaoBanco;
 import br.com.sistemabancario.simulacao.SimuladorConcorrencia;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import java.math.BigDecimal;
@@ -50,7 +51,7 @@ class ServicoBancarioTest {
         assertEquals(240, banco.consultarExtrato(conta.getIdentificador()).size());
     }
 
-    @Test
+    @RepeatedTest(10)
     void transferenciasOpostasTerminamSemDeadlockEConservamSaldos() {
         ServicoBancario banco = new ServicoBancario(diretorioTemporario.resolve("transferencias.db"));
         Conta a = banco.criarConta(new Cliente("A"), new BigDecimal("100.00"));

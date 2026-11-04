@@ -92,7 +92,7 @@ final class PainelContas extends JPanel {
     }
 
     private JPanel resumo() {
-        JPanel faixa = new JPanel(new java.awt.GridLayout(1, 2, 16, 0));
+        JPanel faixa = new JPanel(new java.awt.GridLayout(0, 1, 0, 8));
         faixa.setOpaque(false);
 
         JPanel cartaoQuantidade = new JPanel(new BorderLayout(0, 7));
@@ -132,11 +132,17 @@ final class PainelContas extends JPanel {
         rotulo.setForeground(EstiloSwing.TEXTO);
         JButton recarregar = EstiloSwing.botao("Atualizar lista", false);
         recarregar.addActionListener(evento -> atualizar.run());
-        titulo.add(rotulo, BorderLayout.WEST);
-        titulo.add(recarregar, BorderLayout.EAST);
+        JButton cadastrar = EstiloSwing.botao("Novo cliente e conta", true);
+        cadastrar.addActionListener(evento -> navegar.accept("cadastro", null));
+        JPanel acoesTitulo = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 6, 0));
+        acoesTitulo.setOpaque(false);
+        acoesTitulo.add(recarregar);
+        acoesTitulo.add(cadastrar);
+        titulo.add(rotulo, BorderLayout.NORTH);
+        titulo.add(acoesTitulo, BorderLayout.SOUTH);
         cartao.add(titulo, BorderLayout.NORTH);
 
-        JScrollPane rolagem = new JScrollPane(tabela);
+        JScrollPane rolagem = EstiloSwing.rolagemNatural(new JScrollPane(tabela));
         rolagem.setBorder(BorderFactory.createLineBorder(EstiloSwing.BORDA));
         conteudoTabela.add(rolagem, LISTA);
         JLabel vazio = new JLabel("Nenhuma conta cadastrada. Use “Cadastrar conta” para começar.", JLabel.CENTER);

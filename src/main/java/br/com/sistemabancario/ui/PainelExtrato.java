@@ -23,8 +23,10 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.SwingConstants;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.AbstractTableModel;
+import javax.swing.table.DefaultTableCellRenderer;
 
 final class PainelExtrato extends JPanel {
     private static final String DADOS = "dados";
@@ -80,7 +82,8 @@ final class PainelExtrato extends JPanel {
     }
 
     void definirTransacoes(List<Transacao> transacoes) {
-        modelo.definirTransacoes(transacoes);
+        Conta conta = contaSelecionada();
+        modelo.definirTransacoes(conta == null ? null : conta.getIdentificador(), transacoes);
         CardLayout cards = (CardLayout) cartoesTabela.getLayout();
         cards.show(cartoesTabela, transacoes.isEmpty() ? VAZIO : DADOS);
         estado.setText(transacoes.isEmpty() ? "Nenhuma transação registrada para esta conta."
@@ -88,16 +91,17 @@ final class PainelExtrato extends JPanel {
     }
 
     private JPanel cartaoSelecao() {
-        JPanel cartao = new JPanel(new GridBagLayout());
+        JPanel cartao = new JPanel(new BorderLayout(0, 10));
         EstiloSwing.cartao(cartao);
-        GridBagConstraints c = new GridBagConstraints();
-        c.gridx = 0; c.gridy = 0; c.anchor = GridBagConstraints.WEST;
-        c.insets = new Insets(0, 0, 0, 14);
-        cartao.add(EstiloSwing.rotuloCampo("Conta"), c);
         EstiloSwing.contas(contas);
-        c.gridx = 1; c.fill = GridBagConstraints.HORIZONTAL; c.weightx = 1;
-        cartao.add(contas, c);
-        var atualizar = EstiloSwing.botao("Consultar extrato", true);
+        JPanel campos = new JPanel(new BorderLayout(0, 7));
+        campos.setOpaque(false);
+        campos.add(EstiloSwing.rotuloCampo("Conta"), BorderLayout.NORTH);
+        campos.add(contas, BorderLayout.CENTER);
+        cartao.add(campos, BorderLayout.NORTH);
+        JPanel botoes = new JPanel(new java.awt.GridLayout(1, 2, 8, 0));
+        botoes.setOpaque(false);
+        var atualizar = EstiloSwing.botao("Consultar", true);
         atualizar.addActionListener(evento -> {
             Conta conta = contaSelecionada();
             if (conta == null) {
@@ -106,12 +110,11 @@ final class PainelExtrato extends JPanel {
             }
             consultar.accept(conta);
         });
-        c.gridx = 2; c.fill = GridBagConstraints.NONE; c.weightx = 0; c.insets = new Insets(0, 12, 0, 0);
-        cartao.add(atualizar, c);
         var salvar = EstiloSwing.botao("Exportar TXT", false);
         salvar.addActionListener(evento -> escolherDestino());
-        c.gridx = 3; c.insets = new Insets(0, 8, 0, 0);
-        cartao.add(salvar, c);
+        botoes.add(atualizar);
+        botoes.add(salvar);
+        cartao.add(botoes, BorderLayout.CENTER);
         return cartao;
     }
 
@@ -128,13 +131,16 @@ final class PainelExtrato extends JPanel {
 
         JTable tabela = new JTable(modelo);
         EstiloSwing.tabela(tabela);
-        tabela.setAutoResizeMode(JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS);
-        tabela.getColumnModel().getColumn(0).setPreferredWidth(155);
+        DefaultTableCellRenderer rendererMovimentacao = new RendererMovimentacao();
+        tabela.getColumnModel().getColumn(1).setCellRenderer(rendererMovimentacao);
+        tabela.getColumnModel().getColumn(2).setCellRenderer(new RendererValor());
+        tabela.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        tabela.getColumnModel().getColumn(0).setPreferredWidth(125);
         tabela.getColumnModel().getColumn(1).setPreferredWidth(150);
-        tabela.getColumnModel().getColumn(2).setPreferredWidth(145);
-        tabela.getColumnModel().getColumn(3).setPreferredWidth(270);
-        tabela.getColumnModel().getColumn(4).setPreferredWidth(270);
-        JScrollPane rolagem = new JScrollPane(tabela);
+        tabela.getColumnModel().getColumn(2).setPreferredWidth(120);
+        tabela.getColumnModel().getColumn(3).setPreferredWidth(130);
+        tabela.getColumnModel().getColumn(4).setPreferredWidth(130);
+        JScrollPane rolagem = EstiloSwing.rolagemNatural(new JScrollPane(tabela));
         rolagem.setBorder(BorderFactory.createLineBorder(EstiloSwing.BORDA));
         cartoesTabela.add(rolagem, DADOS);
         JLabel vazio = new JLabel("Nenhuma movimentação para exibir. Consulte o extrato de uma conta.", JLabel.CENTER);
@@ -173,8 +179,10 @@ final class PainelExtrato extends JPanel {
     private static final class ModeloTransacoes extends AbstractTableModel {
         private final String[] colunas = {"Data e hora", "Tipo", "Valor", "Origem", "Destino"};
         private List<Transacao> transacoes = List.of();
+        private UUID contaId;
 
-        void definirTransacoes(List<Transacao> transacoes) {
+        void definirTransacoes(UUID contaId, List<Transacao> transacoes) {
+            this.contaId = contaId;
             this.transacoes = List.copyOf(transacoes);
             fireTableDataChanged();
         }
@@ -186,13 +194,55 @@ final class PainelExtrato extends JPanel {
             Transacao transacao = transacoes.get(linha);
             return switch (coluna) {
                 case 0 -> transacao.dataHora().format(DATA_HORA);
-                case 1 -> transacao.tipo();
-                case 2 -> EstiloSwing.moeda(transacao.valor());
+                case 1 -> rotuloMovimentacao(transacao);
+                case 2 -> entrada(transacao) ? "+ " + EstiloSwing.moeda(transacao.valor())
+                        : "− " + EstiloSwing.moeda(transacao.valor());
                 case 3 -> Conta.formatarIdentificador(transacao.contaOrigem());
                 case 4 -> transacao.contaDestino() == null ? "—"
                         : Conta.formatarIdentificador(transacao.contaDestino());
                 default -> throw new IndexOutOfBoundsException(coluna);
             };
+        }
+
+        private String rotuloMovimentacao(Transacao transacao) {
+            return (entrada(transacao) ? "Entrada · " : "Saída · ") + switch (transacao.tipo()) {
+                case DEPOSITO -> "Depósito";
+                case SAQUE -> "Saque";
+                case TRANSFERENCIA -> "Transferência";
+            };
+        }
+
+        private boolean entrada(Transacao transacao) {
+            return switch (transacao.tipo()) {
+                case DEPOSITO -> true;
+                case SAQUE -> false;
+                case TRANSFERENCIA -> contaId != null && contaId.equals(transacao.contaDestino());
+            };
+        }
+    }
+
+    private static class RendererMovimentacao extends DefaultTableCellRenderer {
+        @Override
+        public java.awt.Component getTableCellRendererComponent(JTable tabela, Object valor,
+                boolean selecionada, boolean foco, int linha, int coluna) {
+            java.awt.Component componente = super.getTableCellRendererComponent(
+                    tabela, valor, selecionada, foco, linha, coluna);
+            if (!selecionada) {
+                setForeground(String.valueOf(valor).startsWith("Entrada")
+                        ? EstiloSwing.SUCESSO : EstiloSwing.ERRO);
+            }
+            return componente;
+        }
+    }
+
+    private static final class RendererValor extends RendererMovimentacao {
+        @Override
+        public java.awt.Component getTableCellRendererComponent(JTable tabela, Object valor,
+                boolean selecionada, boolean foco, int linha, int coluna) {
+            java.awt.Component componente = super.getTableCellRendererComponent(
+                    tabela, valor, selecionada, foco, linha, coluna);
+            setHorizontalAlignment(SwingConstants.RIGHT);
+            return componente;
         }
     }
 }

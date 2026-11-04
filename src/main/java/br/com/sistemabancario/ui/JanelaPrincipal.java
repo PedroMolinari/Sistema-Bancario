@@ -10,11 +10,12 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
-import java.awt.Insets;
 import java.math.BigDecimal;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Matcher;
@@ -24,157 +25,141 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.swing.BorderFactory;
-import javax.swing.Box;
-import javax.swing.BoxLayout;
-import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.SwingWorker;
 
 /** Janela Swing; toda chamada ao serviço é executada em segundo plano. */
 public final class JanelaPrincipal extends JFrame {
+    private static final String INICIO = "inicio";
     private static final String CONTAS = "contas";
+    private static final String CHAT = "chat";
+    private static final String OPERACOES = "operacoes";
     private static final Pattern UUID_TEXTO = Pattern.compile(
             "(?i)(?<![0-9a-f])[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![0-9a-f])");
     private final ControladorBancario controlador;
-    private final JPanel areaCartoes = new JPanel(new CardLayout());
+    private final PainelAreaRolavel areaCartoes = new PainelAreaRolavel(new CardLayout());
     private final JPanel conteudoInterativo = new JPanel(new BorderLayout());
+    private final JPanel areaInferior = new JPanel(new BorderLayout());
+    private final PainelRaizMobile painelRaiz;
     private final JLabel estado = new JLabel("Preparando interface…");
-    private final Map<String, JButton> botoesNavegacao = new LinkedHashMap<>();
+    private final BarraNavegacaoMobile barraNavegacao;
     private final PainelContas painelContas;
+    private final PainelInicio painelInicio;
     private final PainelCadastroConta painelCadastro;
     private final PainelOperacao painelDeposito;
     private final PainelOperacao painelSaque;
     private final PainelTransferencia painelTransferencia;
+    private final PainelOperacoes painelOperacoes;
     private final PainelExtrato painelExtrato;
+    private final PainelChat painelChat;
     private boolean ocupado;
+    private int versaoDados;
 
     public JanelaPrincipal(ControladorBancario controlador) {
         super("Sistema Bancário");
         this.controlador = controlador;
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setMinimumSize(new Dimension(1000, 680));
-        setSize(1280, 820);
+        setMinimumSize(new Dimension(360, 650));
+        setSize(430, 850);
+        setResizable(true);
         setLocationRelativeTo(null);
-        getContentPane().setBackground(EstiloSwing.FUNDO);
-        getContentPane().setLayout(new BorderLayout());
-
         painelContas = new PainelContas(this::carregarContas,
-                (destino, conta) -> navegar(destino, conta.getIdentificador()), this::excluirConta);
+                (destino, conta) -> navegar(destino, conta == null ? null : conta.getIdentificador()),
+                this::excluirConta);
+        painelInicio = new PainelInicio(destino -> navegar(destino, null));
         painelCadastro = new PainelCadastroConta((nome, saldo) -> cadastrarConta(nome, saldo));
         painelDeposito = new PainelOperacao(PainelOperacao.Tipo.DEPOSITO, this::depositar);
         painelSaque = new PainelOperacao(PainelOperacao.Tipo.SAQUE, this::sacar);
         painelTransferencia = new PainelTransferencia(this::transferir);
+        painelOperacoes = new PainelOperacoes(destino -> navegar(destino, null));
         painelExtrato = new PainelExtrato(this::consultarExtrato, this::exportarExtrato);
+        painelChat = new PainelChat(new ClienteChatSimulado());
+        barraNavegacao = new BarraNavegacaoMobile(destino -> navegar(destino, null));
 
+        painelRaiz = new PainelRaizMobile(conteudoInterativo, this::carregarContas);
+        setContentPane(painelRaiz);
         montarCabecalho();
         montarAreaPrincipal();
         montarRodape();
-        getContentPane().add(conteudoInterativo, BorderLayout.CENTER);
     }
 
     public void iniciar() {
+        painelRaiz.mostrarAcesso();
         setVisible(true);
-        carregarContas();
     }
 
     private void montarCabecalho() {
         JPanel cabecalho = new JPanel(new BorderLayout());
         cabecalho.setBackground(Color.WHITE);
-        JPanel identidade = new JPanel(new java.awt.GridLayout(0, 1, 0, 2));
+        JPanel identidade = new JPanel(new BorderLayout(13, 0));
         identidade.setOpaque(false);
+        JLabel monograma = new JLabel("SB", JLabel.CENTER);
+        monograma.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 13));
+        monograma.setForeground(Color.WHITE);
+        monograma.setOpaque(true);
+        monograma.setBackground(EstiloSwing.AZUL);
+        monograma.setPreferredSize(new Dimension(38, 38));
+        identidadBorder(monograma);
+        JPanel textosMarca = new JPanel(new java.awt.GridLayout(0, 1, 0, 2));
+        textosMarca.setOpaque(false);
         JLabel marca = new JLabel("Sistema Bancário");
-        marca.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 21));
+        marca.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 16));
         marca.setForeground(EstiloSwing.MARINHO);
         JLabel subtitulo = new JLabel("Contas e operações do dia a dia");
-        subtitulo.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 13));
+        subtitulo.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 11));
         subtitulo.setForeground(EstiloSwing.SECUNDARIO);
-        identidade.add(marca);
-        identidade.add(subtitulo);
-        JLabel ambiente = new JLabel("AMBIENTE LOCAL");
-        ambiente.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 12));
-        ambiente.setForeground(new Color(37, 110, 83));
+        textosMarca.add(marca);
+        textosMarca.add(subtitulo);
+        identidade.add(monograma, BorderLayout.WEST);
+        identidade.add(textosMarca, BorderLayout.CENTER);
+        JLabel ambiente = new JLabel("LOCAL");
+        ambiente.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 10));
+        ambiente.setForeground(EstiloSwing.AZUL_ATIVO);
         ambiente.setOpaque(true);
-        ambiente.setBackground(new Color(231, 245, 238));
-        ambiente.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(206, 231, 217)),
-                BorderFactory.createEmptyBorder(8, 12, 8, 12)));
+        ambiente.setBackground(EstiloSwing.AZUL_CLARO);
+        ambiente.setBorder(BorderFactory.createEmptyBorder(7, 9, 7, 9));
         cabecalho.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(0, 0, 1, 0, EstiloSwing.BORDA),
-                BorderFactory.createEmptyBorder(14, 26, 14, 26)));
+                BorderFactory.createEmptyBorder(10, 14, 10, 14)));
         cabecalho.add(identidade, BorderLayout.WEST);
         cabecalho.add(ambiente, BorderLayout.EAST);
-        getContentPane().add(cabecalho, BorderLayout.NORTH);
+        conteudoInterativo.add(cabecalho, BorderLayout.NORTH);
+    }
+
+    private static void identidadBorder(JLabel monograma) {
+        monograma.setBorder(BorderFactory.createLineBorder(EstiloSwing.AZUL_ATIVO));
     }
 
     private void montarAreaPrincipal() {
         conteudoInterativo.setOpaque(false);
-        JPanel navegacao = new JPanel();
-        navegacao.setLayout(new BoxLayout(navegacao, BoxLayout.Y_AXIS));
-        navegacao.setBackground(EstiloSwing.MARINHO);
-        navegacao.setBorder(BorderFactory.createEmptyBorder(24, 14, 18, 14));
-        navegacao.setPreferredSize(new Dimension(232, 0));
-        JLabel menu = new JLabel("MENU PRINCIPAL");
-        menu.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 11));
-        menu.setForeground(new Color(180, 195, 216));
-        menu.setBorder(BorderFactory.createEmptyBorder(2, 10, 14, 0));
-        menu.setAlignmentX(Component.LEFT_ALIGNMENT);
-        navegacao.add(menu);
-        adicionarNavegacao(navegacao, "Contas", CONTAS);
-        navegacao.add(Box.createVerticalStrut(6));
-        adicionarNavegacao(navegacao, "Cadastrar conta", "cadastro");
-        navegacao.add(Box.createVerticalStrut(6));
-        adicionarNavegacao(navegacao, "Depósito", "deposito");
-        navegacao.add(Box.createVerticalStrut(6));
-        adicionarNavegacao(navegacao, "Saque", "saque");
-        navegacao.add(Box.createVerticalStrut(6));
-        adicionarNavegacao(navegacao, "Transferência", "transferencia");
-        navegacao.add(Box.createVerticalStrut(6));
-        adicionarNavegacao(navegacao, "Extrato", "extrato");
-        navegacao.add(Box.createVerticalGlue());
-        JLabel rodapeNav = new JLabel("SISTEMA BANCÁRIO  •  LOCAL");
-        rodapeNav.setForeground(new Color(180, 195, 216));
-        rodapeNav.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 11));
-        rodapeNav.setBorder(BorderFactory.createEmptyBorder(16, 10, 2, 0));
-        rodapeNav.setAlignmentX(Component.LEFT_ALIGNMENT);
-        navegacao.add(rodapeNav);
-
         areaCartoes.setOpaque(false);
-        areaCartoes.setBorder(BorderFactory.createEmptyBorder(30, 34, 28, 34));
+        areaCartoes.setBorder(BorderFactory.createEmptyBorder(16, 14, 16, 14));
+        areaCartoes.add(painelInicio, INICIO);
         areaCartoes.add(painelContas, CONTAS);
+        areaCartoes.add(painelOperacoes, OPERACOES);
         areaCartoes.add(painelCadastro, "cadastro");
         areaCartoes.add(painelDeposito, "deposito");
         areaCartoes.add(painelSaque, "saque");
         areaCartoes.add(painelTransferencia, "transferencia");
         areaCartoes.add(painelExtrato, "extrato");
-        conteudoInterativo.add(navegacao, BorderLayout.WEST);
-        conteudoInterativo.add(areaCartoes, BorderLayout.CENTER);
-        navegar(CONTAS, null);
-    }
+        areaCartoes.add(painelChat, CHAT);
+        JScrollPane rolagem = EstiloSwing.rolagemNatural(new JScrollPane(areaCartoes,
+                JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER));
+        rolagem.setBorder(BorderFactory.createEmptyBorder());
+        rolagem.setOpaque(false);
+        rolagem.getViewport().setOpaque(false);
+        conteudoInterativo.add(rolagem, BorderLayout.CENTER);
 
-    private void adicionarNavegacao(JPanel navegacao, String rotulo, String cartao) {
-        JButton botao = new JButton(rotulo);
-        botao.setHorizontalAlignment(JButton.LEFT);
-        botao.setMargin(new Insets(0, 0, 0, 0));
-        botao.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 14));
-        botao.setForeground(new Color(235, 241, 249));
-        botao.setBackground(EstiloSwing.MARINHO);
-        botao.setFocusPainted(false);
-        botao.setBorderPainted(true);
-        botao.setOpaque(true);
-        botao.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
-        botao.setAlignmentX(Component.LEFT_ALIGNMENT);
-        botao.setMaximumSize(new Dimension(Integer.MAX_VALUE, 50));
-        botao.setPreferredSize(new Dimension(200, 50));
-        botao.setBorder(BorderFactory.createEmptyBorder(0, 16, 0, 12));
-        botao.addActionListener(evento -> navegar(cartao, null));
-        botoesNavegacao.put(cartao, botao);
-        navegacao.add(botao);
+        areaInferior.add(barraNavegacao, BorderLayout.CENTER);
+        conteudoInterativo.add(areaInferior, BorderLayout.SOUTH);
+        navegar(INICIO, null);
     }
 
     private void montarRodape() {
-        JPanel rodape = new JPanel(new FlowLayout(FlowLayout.LEFT, 16, 8));
+        JPanel rodape = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 3));
         rodape.setBackground(Color.WHITE);
         rodape.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, EstiloSwing.BORDA));
         estado.setForeground(EstiloSwing.SECUNDARIO);
@@ -183,21 +168,12 @@ public final class JanelaPrincipal extends JFrame {
                 BorderFactory.createMatteBorder(1, 0, 0, 0, EstiloSwing.BORDA),
                 BorderFactory.createEmptyBorder(2, 12, 2, 12)));
         rodape.add(estado);
-        getContentPane().add(rodape, BorderLayout.SOUTH);
+        areaInferior.add(rodape, BorderLayout.SOUTH);
     }
 
     private void navegar(String destino, UUID contaId) {
-        CardLayout cards = (CardLayout) areaCartoes.getLayout();
-        cards.show(areaCartoes, destino);
-        botoesNavegacao.forEach((chave, botao) -> {
-            boolean selecionado = chave.equals(destino);
-            botao.setBackground(selecionado ? EstiloSwing.AZUL_ATIVO : EstiloSwing.MARINHO);
-            botao.setForeground(selecionado ? Color.WHITE : new Color(220, 230, 243));
-            botao.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createMatteBorder(0, 3, 0, 0,
-                            selecionado ? new Color(117, 177, 239) : EstiloSwing.MARINHO),
-                    BorderFactory.createEmptyBorder(0, 13, 0, 12)));
-        });
+        areaCartoes.mostrar(destino);
+        barraNavegacao.selecionar(destino);
         if (contaId != null) {
             painelDeposito.selecionar(contaId);
             painelSaque.selecionar(contaId);
@@ -211,13 +187,49 @@ public final class JanelaPrincipal extends JFrame {
     }
 
     private void definirContas(List<Conta> contas) {
+        int versao = ++versaoDados;
         painelContas.definirContas(contas);
+        painelInicio.definirContas(contas);
         painelDeposito.definirContas(contas);
         painelSaque.definirContas(contas);
         painelTransferencia.definirContas(contas);
         painelExtrato.definirContas(contas);
         definirEstado(contas.isEmpty() ? "Nenhuma conta cadastrada." : "Contas atualizadas: " + contas.size(),
                 EstiloSwing.SECUNDARIO);
+        carregarMovimentacoesInicio(contas, versao);
+    }
+
+    private void carregarMovimentacoesInicio(List<Conta> contas, int versao) {
+        if (contas.isEmpty()) {
+            painelInicio.definirTransacoes(List.of());
+            return;
+        }
+        painelInicio.carregandoMovimentacoes();
+        new SwingWorker<List<Transacao>, Void>() {
+            @Override protected List<Transacao> doInBackground() {
+                Map<UUID, Transacao> unicas = new HashMap<>();
+                for (Conta conta : contas) {
+                    for (Transacao transacao : controlador.consultarExtrato(conta.getIdentificador())) {
+                        unicas.put(transacao.identificador(), transacao);
+                    }
+                }
+                List<Transacao> recentes = new ArrayList<>(unicas.values());
+                recentes.sort(Comparator.comparing(Transacao::dataHora).reversed());
+                return List.copyOf(recentes.subList(0, Math.min(6, recentes.size())));
+            }
+
+            @Override protected void done() {
+                if (versao != versaoDados) return;
+                try {
+                    painelInicio.definirTransacoes(get());
+                } catch (InterruptedException erro) {
+                    Thread.currentThread().interrupt();
+                    painelInicio.falhaMovimentacoes();
+                } catch (ExecutionException erro) {
+                    painelInicio.falhaMovimentacoes();
+                }
+            }
+        }.execute();
     }
 
     private void cadastrarConta(String nome, BigDecimal saldoInicial) {
