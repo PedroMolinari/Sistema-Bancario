@@ -60,9 +60,46 @@ public final class ConexaoBanco {
             for (String sql : script.split(";")) {
                 if (!sql.isBlank()) comando.execute(sql);
             }
+            boolean possuiNome = false;
+            try (var colunas = comando.executeQuery("PRAGMA table_info(usuario_acesso)")) {
+                while (colunas.next()) if ("nome".equalsIgnoreCase(colunas.getString("name"))) possuiNome = true;
+            }
+            if (!possuiNome) comando.execute("ALTER TABLE usuario_acesso ADD COLUMN nome TEXT NOT NULL DEFAULT ''");
+            migrarNumeroPublicoConta(conexao, comando);
         } catch (SQLException e) {
             throw new PersistenciaException("Não foi possível inicializar o banco SQLite.", e);
         }
+    }
+
+    /** Adiciona números públicos sem alterar os UUIDs internos nem remover contas já existentes. */
+    private static void migrarNumeroPublicoConta(Connection conexao, Statement comando) throws SQLException {
+        boolean possuiNumero = false;
+        try (var colunas = comando.executeQuery("PRAGMA table_info(conta)")) {
+            while (colunas.next()) {
+                if ("numero_publico".equalsIgnoreCase(colunas.getString("name"))) possuiNumero = true;
+            }
+        }
+        if (!possuiNumero) comando.execute("ALTER TABLE conta ADD COLUMN numero_publico INTEGER");
+
+        long proximoNumero = 1;
+        try (var resultado = comando.executeQuery("SELECT COALESCE(MAX(numero_publico), 0) FROM conta")) {
+            if (resultado.next()) proximoNumero = resultado.getLong(1) + 1;
+        }
+        java.util.List<String> ids = new java.util.ArrayList<>();
+        try (var pendentes = comando.executeQuery("SELECT id FROM conta WHERE numero_publico IS NULL ORDER BY id")) {
+            while (pendentes.next()) ids.add(pendentes.getString(1));
+        }
+        try (var atualizar = conexao.prepareStatement(
+                "UPDATE conta SET numero_publico = ? WHERE id = ? AND numero_publico IS NULL")) {
+            for (String id : ids) {
+                atualizar.setLong(1, proximoNumero++);
+                atualizar.setString(2, id);
+                atualizar.executeUpdate();
+            }
+        }
+        comando.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_conta_numero_publico ON conta(numero_publico)");
+        comando.execute("INSERT OR IGNORE INTO conta_numero_seq (id, proximo) "
+                + "SELECT 1, COALESCE(MAX(numero_publico), 0) + 1 FROM conta");
     }
 
     public <T> T emTransacao(Operacao<T> operacao) {

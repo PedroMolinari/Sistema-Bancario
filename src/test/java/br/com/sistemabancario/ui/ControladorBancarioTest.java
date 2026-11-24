@@ -99,6 +99,16 @@ class ControladorBancarioTest {
     }
 
     @Test
+    void encaminhaConsultaDeMovimentacoesRecentesComOLimite() {
+        ServicoFalso servico = new ServicoFalso();
+        List<Transacao> recentes = List.of(transacao(Transacao.Tipo.DEPOSITO, CONTA_ID, null));
+        servico.recentes = recentes;
+
+        assertSame(recentes, new ControladorBancario(servico).consultarMovimentacoesRecentes(6));
+        assertEquals(6, servico.limiteRecentes);
+    }
+
+    @Test
     void exportaExtratoPeloServicoFalsoSemSQLite() throws Exception {
         ServicoFalso servico = new ServicoFalso();
         servico.conta = new Conta(CONTA_ID, CLIENTE, new BigDecimal("100.00"));
@@ -120,6 +130,7 @@ class ControladorBancarioTest {
     private static final class ServicoFalso implements ServicoBancarioPorta {
         private List<Conta> contas = List.of();
         private List<Transacao> extrato = List.of();
+        private List<Transacao> recentes = List.of();
         private Conta conta;
         private Transacao transacao;
         private Cliente clienteRecebido;
@@ -130,6 +141,7 @@ class ControladorBancarioTest {
         private UUID destinoRecebido;
         private RuntimeException falha;
         private int chamadasListarContas;
+        private int limiteRecentes;
 
         @Override
         public List<Conta> listarContas() {
@@ -181,6 +193,12 @@ class ControladorBancarioTest {
         public List<Transacao> consultarExtrato(UUID contaId) {
             idConsultado = contaId;
             return extrato;
+        }
+
+        @Override
+        public List<Transacao> consultarMovimentacoesRecentes(int limite) {
+            limiteRecentes = limite;
+            return recentes;
         }
 
         @Override

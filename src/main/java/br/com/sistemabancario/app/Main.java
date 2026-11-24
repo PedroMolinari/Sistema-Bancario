@@ -13,7 +13,11 @@ public final class Main {
     private Main() { }
 
     public static void main(String[] args) {
-        ServicoBancario banco = new ServicoBancario();
+        Path diretorioDemonstracao = Path.of(System.getProperty("sistema.demo.dir", "target/demo"))
+                .toAbsolutePath().normalize();
+        Path arquivoBanco = Path.of(System.getProperty("banco.db.path",
+                diretorioDemonstracao.resolve("banco.db").toString()));
+        ServicoBancario banco = new ServicoBancario(arquivoBanco);
         Cliente ana = new Cliente("Ana Souza");
         Cliente bruno = new Cliente("Bruno Lima");
         Conta contaAna = banco.criarConta(ana, new BigDecimal("1000.00"));
@@ -33,7 +37,9 @@ public final class Main {
         var race = simulador.demonstrarRaceCondition(8);
 
         // Os movimentos artificiais da simulação ficam em outro arquivo SQLite e não entram no extrato demonstrativo.
-        ServicoBancario bancoSimulacao = new ServicoBancario(Path.of("target/simulacao-concorrencia.db"));
+        Path arquivoBancoSimulacao = Path.of(System.getProperty("sistema.demo.simulacao.db.path",
+                diretorioDemonstracao.resolve("simulacao-concorrencia.db").toString()));
+        ServicoBancario bancoSimulacao = new ServicoBancario(arquivoBancoSimulacao);
         Conta contaSimulacaoA = bancoSimulacao.criarConta(
                 new Cliente("Simulação concorrente A"), new BigDecimal("100.00"));
         Conta contaSimulacaoB = bancoSimulacao.criarConta(
@@ -44,9 +50,10 @@ public final class Main {
                 contaSimulacaoA.getIdentificador(), contaSimulacaoB.getIdentificador(),
                 10, new BigDecimal("0.01"));
 
-        Path relatorio = new RelatorioConcorrencia().exportar(race, Path.of("docs/relatorio-concorrencia.md"));
+        Path relatorio = new RelatorioConcorrencia().exportar(race,
+                diretorioDemonstracao.resolve("relatorio-concorrencia.md"));
         Path extrato = new ExportadorExtrato(banco).exportar(
-                contaAna.getIdentificador(), Path.of("docs/extrato-exemplo.txt"));
+                contaAna.getIdentificador(), diretorioDemonstracao.resolve("extrato-exemplo.txt"));
 
         System.out.println("Saldo esperado no cenário inseguro: R$ " + race.esperado());
         System.out.println("Saldo observado no cenário inseguro: R$ " + race.observado());

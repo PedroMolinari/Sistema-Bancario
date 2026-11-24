@@ -1,100 +1,103 @@
 package br.com.sistemabancario.ui;
 
 import java.awt.BorderLayout;
+import java.awt.ComponentOrientation;
 import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.Insets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
+import javax.swing.Timer;
 import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 
-/** Chat informativo; o cliente não recebe controlador, serviço ou acesso à persistência. */
+/** Coordena o envio e o estado da conversa, sem expor serviços bancários ao cliente de IA. */
 final class PainelChat extends JPanel {
     private final ClienteChat cliente;
-    private final JTextArea historico = new JTextArea();
+    private final PainelHistoricoChat historico = new PainelHistoricoChat();
+    private final List<MensagemConversa> conversa = new ArrayList<>();
     private final JTextField entrada = new JTextField();
-    private final JButton enviar = EstiloSwing.botao("Enviar", true);
-    private final JLabel estado = new JLabel("Assistente simulado — dúvidas gerais sobre o sistema.");
+    private final JButton enviar = EstiloSwing.botaoCompacto("Enviar", true);
+    private final JLabel estado = new JLabel(" ");
+    private final JScrollPane rolagem;
+    private final Timer temporizadorRolagem;
+    private SwingWorker<String, Void> respostaAtual;
 
     PainelChat(ClienteChat cliente) {
-        super();
+        super(new BorderLayout());
         this.cliente = cliente;
-        setLayout(new javax.swing.BoxLayout(this, javax.swing.BoxLayout.Y_AXIS));
         setOpaque(false);
-        JPanel cabecalho = EstiloSwing.cabecalhoTela("Assistente do sistema",
-                "Faça perguntas gerais sobre as funções do Sistema Bancário.");
-        cabecalho.setAlignmentX(LEFT_ALIGNMENT);
-        cabecalho.setMaximumSize(new Dimension(Integer.MAX_VALUE, cabecalho.getPreferredSize().height));
-        add(cabecalho);
-        add(javax.swing.Box.createVerticalStrut(14));
+        setComponentOrientation(ComponentOrientation.LEFT_TO_RIGHT);
 
-        JPanel cartao = new JPanel(new BorderLayout(0, 14));
-        EstiloSwing.cartao(cartao);
-        cartao.setAlignmentX(LEFT_ALIGNMENT);
-        historico.setEditable(false);
-        historico.setLineWrap(true);
-        historico.setWrapStyleWord(true);
-        historico.setFont(EstiloSwing.FONTE_CORPO);
-        historico.setForeground(EstiloSwing.TEXTO);
-        historico.setBackground(EstiloSwing.FUNDO_INFO);
-        historico.setText("Assistente: Olá! Posso explicar as funções gerais do sistema. Não acesso contas nem realizo operações.\n");
-        JScrollPane rolagem = EstiloSwing.rolagemNatural(new JScrollPane(historico,
+        historico.adicionarMensagem("Assistente", "Olá! Posso explicar as funções gerais do sistema."
+                + " Não acesso contas nem realizo operações.", false);
+        rolagem = EstiloSwing.rolagemNatural(new JScrollPane(historico,
                 JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER));
-        rolagem.setPreferredSize(new Dimension(330, 230));
-        rolagem.setMinimumSize(new Dimension(220, 180));
-        rolagem.setMaximumSize(new Dimension(Integer.MAX_VALUE, 230));
-        rolagem.setBorder(BorderFactory.createLineBorder(EstiloSwing.BORDA));
-        rolagem.getViewport().setBackground(EstiloSwing.FUNDO_INFO);
-        cartao.add(rolagem, BorderLayout.CENTER);
+        rolagem.setBorder(BorderFactory.createEmptyBorder());
+        rolagem.setOpaque(false);
+        rolagem.getViewport().setOpaque(false);
+        temporizadorRolagem = new Timer(60, evento -> {
+            var barraVertical = rolagem.getVerticalScrollBar();
+            barraVertical.setValue(barraVertical.getMaximum());
+        });
+        temporizadorRolagem.setRepeats(false);
+        add(rolagem, BorderLayout.CENTER);
 
-        JPanel rodape = new JPanel(new BorderLayout(0, 9));
+        JPanel rodape = new JPanel(new BorderLayout(0, 7));
         rodape.setOpaque(false);
+        rodape.setBorder(BorderFactory.createEmptyBorder(8, 20, 16, 20));
         JPanel linhaEntrada = new JPanel(new BorderLayout(10, 0));
         linhaEntrada.setOpaque(false);
         EstiloSwing.campo(entrada);
-        entrada.setPreferredSize(new Dimension(100, 48));
-        enviar.setMargin(new Insets(10, 20, 10, 20));
+        entrada.setComponentOrientation(ComponentOrientation.LEFT_TO_RIGHT);
+        entrada.setToolTipText("Digite uma dúvida geral sobre o sistema");
+        entrada.getAccessibleContext().setAccessibleName("Mensagem para o assistente");
+        entrada.setPreferredSize(new Dimension(100, EstiloSwing.TAMANHO_CAMPO.height));
+        enviar.setToolTipText("Enviar mensagem");
+        enviar.getAccessibleContext().setAccessibleName("Enviar mensagem ao assistente");
+        enviar.setComponentOrientation(ComponentOrientation.LEFT_TO_RIGHT);
         linhaEntrada.add(entrada, BorderLayout.CENTER);
         linhaEntrada.add(enviar, BorderLayout.EAST);
-        estado.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 13));
+
+        estado.setFont(EstiloSwing.FONTE_AUXILIAR);
         estado.setForeground(EstiloSwing.SECUNDARIO);
         rodape.add(linhaEntrada, BorderLayout.CENTER);
         rodape.add(estado, BorderLayout.SOUTH);
-        cartao.add(rodape, BorderLayout.SOUTH);
-        cartao.setPreferredSize(new Dimension(350, 370));
-        cartao.setMaximumSize(new Dimension(Integer.MAX_VALUE, 390));
-        add(cartao);
-        add(javax.swing.Box.createVerticalGlue());
+        add(rodape, BorderLayout.SOUTH);
 
-        enviar.addActionListener(evento -> enviarMensagem());
+        enviar.addActionListener(evento -> {
+            if (respostaAtual != null && !respostaAtual.isDone()) cancelarResposta();
+            else enviarMensagem();
+        });
         entrada.addActionListener(evento -> enviarMensagem());
     }
 
     private void enviarMensagem() {
+        if (respostaAtual != null && !respostaAtual.isDone()) return;
         String mensagem = entrada.getText().trim();
         if (mensagem.isEmpty()) {
-            estado.setText("Digite uma mensagem antes de enviar.");
-            estado.setForeground(EstiloSwing.AVISO);
+            definirEstado("Digite uma mensagem antes de enviar.", EstiloSwing.AVISO);
             entrada.requestFocusInWindow();
             return;
         }
 
         entrada.setText("");
-        adicionarMensagem("Você", mensagem);
-        estado.setText("Assistente está respondendo…");
-        estado.setForeground(EstiloSwing.SECUNDARIO);
+        List<MensagemConversa> contexto = List.copyOf(conversa);
+        conversa.add(new MensagemConversa(MensagemConversa.Papel.USUARIO, mensagem));
+        adicionarMensagem("Você", mensagem, true);
+        definirEstado("Qwen está respondendo…", EstiloSwing.SECUNDARIO);
         entrada.setEnabled(false);
-        enviar.setEnabled(false);
+        configurarBotaoCancelar();
 
-        new SwingWorker<String, Void>() {
+        respostaAtual = new SwingWorker<>() {
             @Override protected String doInBackground() throws Exception {
-                return cliente.responder(mensagem);
+                return cliente.responder(mensagem, contexto);
             }
 
             @Override protected void done() {
@@ -103,9 +106,11 @@ final class PainelChat extends JPanel {
                     if (resposta == null || resposta.isBlank()) {
                         throw new IllegalStateException("O assistente não retornou uma resposta.");
                     }
-                    adicionarMensagem("Assistente", resposta);
-                    estado.setText("Resposta simulada pronta.");
-                    estado.setForeground(EstiloSwing.SUCESSO);
+                    conversa.add(new MensagemConversa(MensagemConversa.Papel.ASSISTENTE, resposta));
+                    adicionarMensagem("Assistente", resposta, false);
+                    definirEstado("Resposta pronta.", EstiloSwing.SUCESSO);
+                } catch (CancellationException erro) {
+                    definirEstado("Geração cancelada.", EstiloSwing.SECUNDARIO);
                 } catch (InterruptedException erro) {
                     Thread.currentThread().interrupt();
                     mostrarErro("A resposta foi interrompida.");
@@ -116,21 +121,56 @@ final class PainelChat extends JPanel {
                     mostrarErro(detalhe == null || detalhe.isBlank()
                             ? "Não foi possível obter uma resposta." : detalhe);
                 } finally {
+                    respostaAtual = null;
                     entrada.setEnabled(true);
-                    enviar.setEnabled(true);
+                    configurarBotaoEnviar();
                     entrada.requestFocusInWindow();
                 }
             }
-        }.execute();
+        };
+        respostaAtual.execute();
     }
 
-    private void adicionarMensagem(String autor, String mensagem) {
-        historico.append("\n" + autor + ": " + mensagem + "\n");
-        historico.setCaretPosition(historico.getDocument().getLength());
+    private void cancelarResposta() {
+        definirEstado("Cancelando geração…", EstiloSwing.SECUNDARIO);
+        enviar.setEnabled(false);
+        respostaAtual.cancel(true);
+    }
+
+    private void adicionarMensagem(String autor, String texto, boolean usuario) {
+        historico.adicionarMensagem(autor, texto, usuario);
+        historico.revalidate();
+        rolagem.revalidate();
+        rolagem.getViewport().revalidate();
+        SwingUtilities.invokeLater(() -> {
+            rolagem.revalidate();
+            rolagem.getViewport().revalidate();
+            temporizadorRolagem.restart();
+        });
+    }
+
+    private void configurarBotaoCancelar() {
+        enviar.setText("Cancelar");
+        enviar.setToolTipText("Interromper a geração atual");
+        enviar.getAccessibleContext().setAccessibleName("Cancelar resposta do assistente");
+        enviar.setEnabled(true);
+    }
+
+    private void configurarBotaoEnviar() {
+        enviar.setText("Enviar");
+        enviar.setToolTipText("Enviar mensagem");
+        enviar.getAccessibleContext().setAccessibleName("Enviar mensagem ao assistente");
+        enviar.setEnabled(true);
     }
 
     private void mostrarErro(String mensagem) {
-        estado.setText("Erro no chat: " + mensagem);
-        estado.setForeground(EstiloSwing.ERRO);
+        definirEstado("Erro no chat: " + mensagem, EstiloSwing.ERRO);
+        estado.setToolTipText(mensagem);
+    }
+
+    private void definirEstado(String mensagem, java.awt.Color cor) {
+        estado.setText(mensagem);
+        estado.setForeground(cor);
+        estado.setToolTipText(null);
     }
 }

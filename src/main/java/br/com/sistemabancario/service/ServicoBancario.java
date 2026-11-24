@@ -5,6 +5,7 @@ import br.com.sistemabancario.domain.Conta;
 import br.com.sistemabancario.domain.Transacao;
 import br.com.sistemabancario.repository.jdbc.BancoRepository;
 import br.com.sistemabancario.repository.jdbc.ConexaoBanco;
+import br.com.sistemabancario.repository.jdbc.UsuarioPersistido;
 import java.math.BigDecimal;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
@@ -35,6 +36,27 @@ public final class ServicoBancario implements ServicoBancarioPorta {
         return conta;
     }
 
+    Conta criarContaAutenticada(Cliente cliente, BigDecimal saldoInicial, String login,
+                                String loginNormalizado, String hashSenha, String saltSenha) {
+        Conta conta = new Conta(cliente, saldoInicial);
+        UsuarioPersistido acesso = new UsuarioPersistido(UUID.randomUUID(), cliente.getNome(), login, loginNormalizado,
+                hashSenha, saltSenha, "CLIENTE", cliente.getIdentificador());
+        repositorio.criarContaComAcesso(conta, acesso);
+        contas.put(conta.getIdentificador(), conta);
+        return conta;
+    }
+
+    void criarAdministrador(String nome, String login, String loginNormalizado, String hashSenha, String saltSenha) {
+        repositorio.criarAdministrador(new UsuarioPersistido(UUID.randomUUID(), nome, login, loginNormalizado,
+                hashSenha, saltSenha, "ADMINISTRADOR", null));
+    }
+
+    java.util.Optional<UsuarioPersistido> buscarUsuario(String loginNormalizado) {
+        return repositorio.buscarUsuario(loginNormalizado);
+    }
+
+    boolean administradorConfigurado() { return repositorio.administradorConfigurado(); }
+
     @Override
     public void excluirConta(UUID id) {
         Conta conta = obterConta(id);
@@ -55,6 +77,12 @@ public final class ServicoBancario implements ServicoBancarioPorta {
                 .orElseThrow(() -> new IllegalArgumentException("Conta não encontrada: " + id));
         Conta concorrente = contas.putIfAbsent(id, carregada);
         return concorrente == null ? carregada : concorrente;
+    }
+
+    public Conta obterContaPorNumeroPublico(long numero) {
+        if (numero <= 0) throw new IllegalArgumentException("Número de conta inválido.");
+        return repositorio.buscarContaPorNumeroPublico(numero)
+                .orElseThrow(() -> new IllegalArgumentException("Conta de destino não encontrada."));
     }
 
     public List<Conta> listarContas() {
@@ -120,9 +148,17 @@ public final class ServicoBancario implements ServicoBancarioPorta {
         }
     }
 
+    @Override public Transacao transferirPorNumeroPublico(UUID origemId, long destinoNumero, BigDecimal valor) {
+        return transferir(origemId, obterContaPorNumeroPublico(destinoNumero).getIdentificador(), valor);
+    }
+
     public List<Transacao> consultarExtrato(UUID contaId) {
         obterConta(contaId);
         return repositorio.listarTransacoes(contaId);
+    }
+
+    public List<Transacao> consultarMovimentacoesRecentes(int limite) {
+        return repositorio.listarTransacoesRecentes(limite);
     }
 
     @Override

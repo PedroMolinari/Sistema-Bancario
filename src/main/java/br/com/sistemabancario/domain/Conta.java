@@ -9,6 +9,7 @@ public final class Conta {
     private final UUID identificador;
     private final Cliente titular;
     private BigDecimal saldo;
+    private long numeroPublico;
 
     public Conta(Cliente titular) {
         this(UUID.randomUUID(), titular, BigDecimal.ZERO);
@@ -25,7 +26,27 @@ public final class Conta {
         this.saldo = saldoInicial;
     }
 
+    public Conta(UUID identificador, Cliente titular, BigDecimal saldoInicial, long numeroPublico) {
+        this(identificador, titular, saldoInicial);
+        atribuirNumeroPublico(numeroPublico);
+    }
+
     public UUID getIdentificador() { return identificador; }
+    /** Número público persistido, separado do UUID interno usado por relações e transações. */
+    public long getNumeroPublico() { return numeroPublico; }
+    public String getNumeroPublicoFormatado() { return formatarNumeroPublico(numeroPublico); }
+    public String getNomePublico() {
+        return numeroPublico > 0 ? "Conta principal · " + getNumeroPublicoFormatado() : "Conta principal";
+    }
+    public static String formatarNumeroPublico(long numero) {
+        if (numero <= 0) throw new IllegalArgumentException("O número público da conta é inválido.");
+        return String.format(java.util.Locale.ROOT, "%06d", numero);
+    }
+    /** Atribuído pelo repositório na criação; não altera o UUID nem o saldo da conta. */
+    public void atribuirNumeroPublico(long numero) {
+        if (numero <= 0) throw new IllegalArgumentException("O número público da conta é inválido.");
+        numeroPublico = numero;
+    }
     /** Forma compacta e reversível do UUID, estável e sem colisões entre contas. */
     public String getIdentificadorCurto() {
         return formatarIdentificador(identificador);
@@ -35,6 +56,23 @@ public final class Conta {
         return new java.math.BigInteger(1, java.nio.ByteBuffer.allocate(16)
                 .putLong(identificador.getMostSignificantBits())
                 .putLong(identificador.getLeastSignificantBits()).array()).toString(36);
+    }
+
+    public static UUID decodificarIdentificador(String identificadorCurto) {
+        Objects.requireNonNull(identificadorCurto, "O identificador da conta é obrigatório.");
+        try {
+            java.math.BigInteger valor = new java.math.BigInteger(identificadorCurto.trim(), 36);
+            if (valor.signum() < 0 || valor.bitLength() > 128) throw new NumberFormatException();
+            byte[] bytes = new byte[16];
+            byte[] magnitude = valor.toByteArray();
+            int origem = magnitude.length > 16 ? magnitude.length - 16 : 0;
+            int tamanho = magnitude.length - origem;
+            System.arraycopy(magnitude, origem, bytes, 16 - tamanho, tamanho);
+            java.nio.ByteBuffer buffer = java.nio.ByteBuffer.wrap(bytes);
+            return new UUID(buffer.getLong(), buffer.getLong());
+        } catch (NumberFormatException erro) {
+            throw new IllegalArgumentException("O identificador curto da conta é inválido.", erro);
+        }
     }
     public Cliente getTitular() { return titular; }
     public synchronized BigDecimal getSaldo() { return saldo; }

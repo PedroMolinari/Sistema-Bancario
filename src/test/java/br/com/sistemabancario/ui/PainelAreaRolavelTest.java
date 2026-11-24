@@ -7,6 +7,8 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.util.List;
 import javax.swing.JScrollPane;
+import javax.swing.JButton;
+import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
@@ -17,27 +19,34 @@ class PainelAreaRolavelTest {
         SwingUtilities.invokeAndWait(() -> {
             CardLayout layout = new CardLayout();
             PainelAreaRolavel area = new PainelAreaRolavel(layout);
-            area.add(new PainelInicio(destino -> { }), "inicio");
-            area.add(new PainelContas(() -> { }, (destino, selecionada) -> { }, selecionada -> { }), "contas");
-            area.add(new PainelOperacoes(destino -> { }), "operacoes");
-            area.add(new PainelCadastroConta((nome, saldo) -> { }), "cadastro");
-            area.add(new PainelOperacao(PainelOperacao.Tipo.DEPOSITO, (selecionada, valor) -> { }), "deposito");
-            area.add(new PainelTransferencia((origem, destino, valor) -> { }), "transferencia");
-            area.add(new PainelExtrato(selecionada -> { }, (selecionada, arquivo) -> { }), "extrato");
-            area.add(new PainelChat(new ClienteChatSimulado()), "chat");
+            Component inicio = new PainelInicio(destino -> { });
+            Component contas = new PainelContas(() -> { }, (destino, selecionada) -> { }, selecionada -> { });
+            Component operacoes = new PainelOperacoes(
+                    new PainelOperacao(PainelOperacao.Tipo.DEPOSITO, (conta, valor) -> { }, true),
+                    new PainelOperacao(PainelOperacao.Tipo.SAQUE, (conta, valor) -> { }, true),
+                    new PainelTransferencia((origem, destino, valor) -> { }, true));
+            Component extrato = new PainelExtrato(selecionada -> { }, (selecionada, arquivo) -> { });
+            Component chat = new PainelChat(new ClienteChatSimulado());
+            JanelaPrincipal.registrarPaginas(area, inicio, contas, operacoes, extrato, chat);
 
-            JScrollPane rolagem = EstiloSwing.rolagemNatural(new JScrollPane(area,
-                    JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER));
+            javax.swing.JPanel conteudoPrincipal = new javax.swing.JPanel(new java.awt.BorderLayout());
+            JScrollPane rolagem = JanelaPrincipal.instalarAreaRolavel(conteudoPrincipal, area);
+            assertSame(rolagem, ((java.awt.BorderLayout) conteudoPrincipal.getLayout())
+                    .getLayoutComponent(java.awt.BorderLayout.CENTER));
+            assertSame(area, rolagem.getViewport().getView());
             rolagem.setSize(398, 680);
             rolagem.doLayout();
             rolagem.getViewport().doLayout();
             area.doLayout();
             int larguraViewport = rolagem.getViewport().getExtentSize().width;
-            for (String tela : List.of("inicio", "contas", "operacoes", "cadastro",
-                    "deposito", "transferencia", "extrato", "chat")) {
-                layout.show(area, tela);
+            for (String tela : List.of("inicio", "contas", "operacoes", "extrato", "chat")) {
+                area.mostrar(tela);
+                assertEquals("chat".equals(tela), area.getScrollableTracksViewportHeight(),
+                        "Somente o chat acompanha a altura da viewport externa.");
                 area.doLayout();
                 Component ativa = telaVisivel(area);
+                assertEquals(tela, area.telaAtual());
+                assertSame(ativa, area.componente(tela));
                 layoutTree(ativa);
                 assertEquals(larguraViewport, ativa.getWidth(), "Largura da tela " + tela);
                 assertTrue(ativa.getHeight() > 0, "Altura da tela " + tela);
@@ -48,6 +57,54 @@ class PainelAreaRolavelTest {
                 assertTrue(interna.isWheelScrollingEnabled());
                 assertEquals(20, interna.getVerticalScrollBar().getUnitIncrement());
             }
+        });
+    }
+
+    @Test
+    void chatReposicionaEntradaERolagemAoRedimensionarViewport() throws Exception {
+        SwingUtilities.invokeAndWait(() -> {
+            PainelAreaRolavel area = new PainelAreaRolavel(new CardLayout());
+            PainelChat chat = new PainelChat(new ClienteChatSimulado());
+            area.registrar("chat", chat);
+            area.mostrar("chat");
+
+            javax.swing.JPanel hospedeiro = new javax.swing.JPanel(new java.awt.BorderLayout());
+            JScrollPane externa = JanelaPrincipal.instalarAreaRolavel(hospedeiro, area);
+            externa.setSize(400, 620);
+            layoutExterna(externa, area, chat);
+            int alturaInicial = chat.getHeight();
+            JScrollPane mensagens = encontrarTodos(chat, JScrollPane.class).getFirst();
+            JTextField entrada = encontrarTodos(chat, JTextField.class).getFirst();
+            JButton enviar = encontrarTodos(chat, JButton.class).stream()
+                    .filter(botao -> "Enviar".equals(botao.getText())).findFirst().orElseThrow();
+            assertEquals(externa.getViewport().getExtentSize().height, area.getHeight());
+            assertEquals(area.getHeight(), chat.getHeight());
+            assertEquals(entrada.getY(), enviar.getY(), "Campo e botão permanecem na mesma linha do rodapé.");
+
+            externa.setSize(1280, 900);
+            externa.revalidate();
+            layoutExterna(externa, area, chat);
+
+            assertTrue(chat.getHeight() > alturaInicial, "O painel deve crescer junto com a janela.");
+            assertEquals(externa.getViewport().getExtentSize().height, area.getHeight());
+            assertEquals(area.getHeight(), chat.getHeight());
+            assertTrue(mensagens.getHeight() > 0);
+            assertTrue(mensagens.getHeight() > 400, "O histórico deve receber a altura adicional disponível.");
+            assertEquals(entrada.getY(), enviar.getY(), "Campo e botão devem continuar alinhados após maximizar.");
+            assertTrue(entrada.getY() + entrada.getHeight() <= chat.getHeight());
+            assertTrue(enviar.getX() + enviar.getWidth() < chat.getWidth(),
+                    "O botão mantém a margem lateral do rodapé.");
+        });
+    }
+
+    @Test
+    void rejeitaRotasNaoRegistradasEIdentificadoresDuplicados() throws Exception {
+        SwingUtilities.invokeAndWait(() -> {
+            PainelAreaRolavel area = new PainelAreaRolavel(new CardLayout());
+            area.registrar("inicio", new PainelInicio(destino -> { }));
+            assertThrows(IllegalArgumentException.class, () -> area.mostrar("inexistente"));
+            assertThrows(IllegalArgumentException.class,
+                    () -> area.registrar("inicio", new javax.swing.JPanel()));
         });
     }
 
@@ -91,5 +148,12 @@ class PainelAreaRolavelTest {
             container.doLayout();
             for (Component filho : container.getComponents()) layoutTree(filho);
         }
+    }
+
+    private static void layoutExterna(JScrollPane externa, PainelAreaRolavel area, PainelChat chat) {
+        externa.doLayout();
+        externa.getViewport().doLayout();
+        area.doLayout();
+        layoutTree(chat);
     }
 }

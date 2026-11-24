@@ -3,6 +3,7 @@ package br.com.sistemabancario.ui;
 import java.awt.CardLayout;
 import java.awt.Component;
 import java.util.Objects;
+import java.util.function.Consumer;
 import javax.swing.JButton;
 import javax.swing.JPanel;
 
@@ -23,6 +24,24 @@ final class PainelRaizMobile extends JPanel {
         PainelAcesso acesso = new PainelAcesso(() -> {
             mostrarAplicativo();
             aoEntrar.run();
+        });
+        entrar = acesso.botaoEntrar();
+        add(acesso, ACESSO);
+        add(aplicativo, APLICACAO);
+        mostrarAcesso();
+    }
+
+    PainelRaizMobile(Component aplicativo, PainelAcesso.OperacoesAcesso operacoes,
+                     Consumer<br.com.sistemabancario.service.SessaoBancaria> aoAutenticar) {
+        super();
+        Objects.requireNonNull(aplicativo);
+        Objects.requireNonNull(operacoes);
+        Objects.requireNonNull(aoAutenticar);
+        setLayout(layout);
+        setBackground(EstiloSwing.FUNDO);
+        PainelAcesso acesso = new PainelAcesso(operacoes, sessao -> {
+            aoAutenticar.accept(sessao);
+            mostrarAplicativo();
         });
         entrar = acesso.botaoEntrar();
         add(acesso, ACESSO);

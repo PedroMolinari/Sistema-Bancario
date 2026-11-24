@@ -28,25 +28,26 @@ class BarraNavegacaoMobileTest {
         SwingUtilities.invokeAndWait(() -> {
             BarraNavegacaoMobile barra = new BarraNavegacaoMobile(destino -> { });
             barra.selecionar("transferencia");
-            assertEquals(EstiloSwing.AZUL_ATIVO, barra.botao("operacoes").getForeground());
+            assertEquals(EstiloSwing.ROSA_ATIVO, barra.botao("operacoes").getForeground());
             assertEquals(EstiloSwing.SECUNDARIO, barra.botao("extrato").getForeground());
             barra.selecionar("cadastro");
-            assertEquals(EstiloSwing.AZUL_ATIVO, barra.botao("contas").getForeground());
+            assertEquals(EstiloSwing.ROSA_ATIVO, barra.botao("contas").getForeground());
             barra.selecionar("chat");
-            assertEquals(EstiloSwing.AZUL_ATIVO, barra.botao("chat").getForeground());
+            assertEquals(EstiloSwing.ROSA_ATIVO, barra.botao("chat").getForeground());
         });
     }
 
     @Test
-    void atalhosDeAcoesMantemDepositoSaqueETransferenciaAcessiveis() throws Exception {
-        List<String> destinos = new ArrayList<>();
+    void paginaAcoesApresentaOsTresFormulariosNoMesmoConjunto() throws Exception {
         SwingUtilities.invokeAndWait(() -> {
-            PainelOperacoes operacoes = new PainelOperacoes(destinos::add);
-            for (String rotulo : List.of("Depositar", "Sacar", "Transferir")) {
-                encontrarBotao(operacoes, rotulo).doClick();
-            }
+            PainelOperacoes operacoes = new PainelOperacoes(
+                    new PainelOperacao(PainelOperacao.Tipo.DEPOSITO, (conta, valor) -> { }, true),
+                    new PainelOperacao(PainelOperacao.Tipo.SAQUE, (conta, valor) -> { }, true),
+                    new PainelTransferencia((origem, destino, valor) -> { }, true));
+            assertNotNull(encontrarBotao(operacoes, "Confirmar depósito"));
+            assertNotNull(encontrarBotao(operacoes, "Confirmar saque"));
+            assertNotNull(encontrarBotao(operacoes, "Revisar e transferir"));
         });
-        assertEquals(List.of("deposito", "saque", "transferencia"), destinos);
     }
 
     private static JButton encontrarBotao(Component raiz, String texto) {

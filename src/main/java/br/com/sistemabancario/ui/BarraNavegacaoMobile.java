@@ -1,6 +1,5 @@
 package br.com.sistemabancario.ui;
 
-import java.awt.Color;
 import java.awt.Dimension;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -16,7 +15,7 @@ final class BarraNavegacaoMobile extends JPanel {
     BarraNavegacaoMobile(Consumer<String> navegar) {
         super(new java.awt.GridLayout(1, 5, 2, 0));
         this.navegar = navegar;
-        setBackground(Color.WHITE);
+        setBackground(EstiloSwing.SUPERFICIE);
         setBorder(javax.swing.BorderFactory.createCompoundBorder(
                 javax.swing.BorderFactory.createMatteBorder(1, 0, 0, 0, EstiloSwing.BORDA),
                 javax.swing.BorderFactory.createEmptyBorder(2, 8, 2, 8)));
@@ -37,12 +36,23 @@ final class BarraNavegacaoMobile extends JPanel {
         botoes.forEach((rota, botao) -> EstiloSwing.botaoNavegacao(botao, rota.equals(aba)));
     }
 
+    void configurarPerfil(boolean administrador) {
+        JButton operacoes = botoes.get("operacoes");
+        if (operacoes != null) {
+            operacoes.setVisible(!administrador);
+            ((java.awt.GridLayout) getLayout()).setColumns(administrador ? 4 : 5);
+            revalidate();
+        }
+    }
+
     JButton botao(String rota) { return botoes.get(rota); }
 
     private void adicionar(String rotulo, String rota) {
         JButton botao = new JButton(rotulo);
         botao.setActionCommand(rota);
         EstiloSwing.botaoNavegacao(botao, false);
+        botao.setToolTipText("Abrir tela " + rotulo);
+        botao.getAccessibleContext().setAccessibleName("Abrir tela " + rotulo);
         botao.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
         botao.setPreferredSize(new Dimension(72, 56));
         botao.addActionListener(evento -> navegar.accept(rota));

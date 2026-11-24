@@ -15,7 +15,7 @@ final class IconeNavegacao implements Icon {
 
     IconeNavegacao(String tela, boolean selecionado) {
         this.tela = tela;
-        cor = selecionado ? Color.WHITE : new Color(226, 205, 209);
+        cor = selecionado ? Color.WHITE : EstiloSwing.ICONE_NEUTRO;
     }
 
     IconeNavegacao(String tela, Color cor) {
@@ -64,6 +64,16 @@ final class IconeNavegacao implements Icon {
             case "chat" -> {
                 g.drawRoundRect(2, 3, 16, 12, 4, 4); g.drawLine(6, 15, 4, 18);
                 g.fillOval(6, 8, 2, 2); g.fillOval(9, 8, 2, 2); g.fillOval(12, 8, 2, 2);
+            }
+            case "ia" -> {
+                g.drawRoundRect(3, 4, 14, 12, 4, 4); g.drawLine(7, 16, 5, 19);
+                g.drawLine(6, 9, 14, 9); g.drawLine(6, 12, 11, 12);
+                g.drawLine(15, 1, 15, 5); g.drawLine(13, 3, 17, 3);
+            }
+            case "calendario" -> {
+                g.drawRoundRect(2, 4, 16, 14, 2, 2); g.drawLine(2, 8, 18, 8);
+                g.drawLine(6, 2, 6, 6); g.drawLine(14, 2, 14, 6);
+                g.fillOval(6, 11, 2, 2); g.fillOval(11, 11, 2, 2);
             }
             case "operacoes" -> {
                 g.drawRoundRect(2, 3, 16, 14, 3, 3);

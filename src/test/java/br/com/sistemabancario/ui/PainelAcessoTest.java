@@ -10,6 +10,20 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class PainelAcessoTest {
     @Test
+    void acessoAlternaEntreComposicaoDesktopECompacta() throws Exception {
+        SwingUtilities.invokeAndWait(() -> {
+            PainelAcesso painel = new PainelAcesso(() -> { });
+            painel.setSize(1280, 820);
+            layoutTree(painel);
+            assertTrue(painel.modoAmplo());
+            painel.setSize(420, 680);
+            layoutTree(painel);
+            assertFalse(painel.modoAmplo());
+            assertTrue(painel.botaoEntrar().getWidth() > 0);
+        });
+    }
+
+    @Test
     void exibeEntradaGeralSemCredenciaisEAcionaAberturaDoAplicativo() throws Exception {
         boolean[] entrou = {false};
         SwingUtilities.invokeAndWait(() -> {

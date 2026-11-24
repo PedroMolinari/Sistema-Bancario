@@ -26,10 +26,10 @@ final class DialogoConfirmacao {
     private static final Pattern UUID_TEXTO = Pattern.compile(
             "(?i)(?<![0-9a-f])[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![0-9a-f])");
     private enum TipoMensagem {
-        SUCESSO("✓", EstiloSwing.SUCESSO, new Color(235, 246, 239)),
-        AVISO("!", EstiloSwing.AVISO, new Color(255, 247, 232)),
-        ERRO("×", EstiloSwing.ERRO, new Color(253, 238, 239)),
-        INFORMACAO("i", EstiloSwing.AZUL, EstiloSwing.AZUL_CLARO);
+        SUCESSO("✓", EstiloSwing.SUCESSO, EstiloSwing.FUNDO_SUCESSO),
+        AVISO("!", EstiloSwing.AVISO, EstiloSwing.FUNDO_AVISO),
+        ERRO("×", EstiloSwing.ERRO, EstiloSwing.FUNDO_ERRO),
+        INFORMACAO("i", EstiloSwing.VINHO, EstiloSwing.VINHO_ESCURO);
 
         private final String simbolo;
         private final Color cor;
@@ -68,13 +68,13 @@ final class DialogoConfirmacao {
         dialogo.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
 
         JPanel conteudo = new JPanel(new BorderLayout(0, 18));
-        conteudo.setBackground(Color.WHITE);
+        conteudo.setBackground(EstiloSwing.SUPERFICIE);
         conteudo.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(EstiloSwing.BORDA),
                 BorderFactory.createEmptyBorder(0, 0, 18, 0)));
 
         JPanel cabecalho = new JPanel(new BorderLayout());
-        cabecalho.setBackground(destrutiva ? new Color(253, 238, 239) : EstiloSwing.AZUL_CLARO);
+        cabecalho.setBackground(destrutiva ? EstiloSwing.FUNDO_ERRO : EstiloSwing.VINHO_ESCURO);
         cabecalho.setBorder(BorderFactory.createEmptyBorder(18, 22, 16, 22));
         JLabel tituloLabel = new JLabel(titulo);
         tituloLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 19));
@@ -132,7 +132,7 @@ final class DialogoConfirmacao {
         dialogo.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
 
         JPanel conteudo = new JPanel(new BorderLayout(0, 18));
-        conteudo.setBackground(Color.WHITE);
+        conteudo.setBackground(EstiloSwing.SUPERFICIE);
         conteudo.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(EstiloSwing.BORDA),
                 BorderFactory.createEmptyBorder(0, 0, 18, 0)));

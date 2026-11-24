@@ -24,7 +24,13 @@ public interface ServicoBancarioPorta {
 
     Transacao transferir(UUID origemId, UUID destinoId, BigDecimal valor);
 
+    default Transacao transferirPorNumeroPublico(UUID origemId, long destinoNumero, BigDecimal valor) {
+        throw new UnsupportedOperationException("A transferência por número público não está disponível.");
+    }
+
     List<Transacao> consultarExtrato(UUID contaId);
+
+    List<Transacao> consultarMovimentacoesRecentes(int limite);
 
     Path exportarExtrato(UUID contaId, Path arquivo);
 }

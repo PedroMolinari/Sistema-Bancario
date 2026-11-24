@@ -40,18 +40,38 @@ public final class TransacaoRepository {
             try (ResultSet resultado = comando.executeQuery()) {
                 List<Transacao> transacoes = new ArrayList<>();
                 while (resultado.next()) {
-                    String destino = resultado.getString("conta_destino");
-                    transacoes.add(new Transacao(UUID.fromString(resultado.getString("id")),
-                            Transacao.Tipo.valueOf(resultado.getString("tipo")),
-                            new BigDecimal(resultado.getString("valor")),
-                            LocalDateTime.parse(resultado.getString("data_hora")),
-                            UUID.fromString(resultado.getString("conta_origem")),
-                            destino == null ? null : UUID.fromString(destino)));
+                    transacoes.add(mapear(resultado));
                 }
                 return List.copyOf(transacoes);
             }
         } catch (SQLException e) {
             throw new PersistenciaException("Não foi possível consultar o extrato.", e);
         }
+    }
+
+    public List<Transacao> listarRecentes(int limite) {
+        if (limite <= 0) throw new IllegalArgumentException("O limite deve ser maior que zero.");
+        String sql = "SELECT id, tipo, valor, data_hora, conta_origem, conta_destino FROM transacao " +
+                "ORDER BY data_hora DESC, id DESC LIMIT ?";
+        try (Connection conexao = banco.abrir(); PreparedStatement comando = conexao.prepareStatement(sql)) {
+            comando.setInt(1, limite);
+            try (ResultSet resultado = comando.executeQuery()) {
+                List<Transacao> transacoes = new ArrayList<>();
+                while (resultado.next()) transacoes.add(mapear(resultado));
+                return List.copyOf(transacoes);
+            }
+        } catch (SQLException e) {
+            throw new PersistenciaException("Não foi possível consultar as movimentações recentes.", e);
+        }
+    }
+
+    private static Transacao mapear(ResultSet resultado) throws SQLException {
+        String destino = resultado.getString("conta_destino");
+        return new Transacao(UUID.fromString(resultado.getString("id")),
+                Transacao.Tipo.valueOf(resultado.getString("tipo")),
+                new BigDecimal(resultado.getString("valor")),
+                LocalDateTime.parse(resultado.getString("data_hora")),
+                UUID.fromString(resultado.getString("conta_origem")),
+                destino == null ? null : UUID.fromString(destino));
     }
 }

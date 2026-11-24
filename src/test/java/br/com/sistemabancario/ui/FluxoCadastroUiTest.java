@@ -29,8 +29,8 @@ class FluxoCadastroUiTest {
             PainelAreaRolavel telas = new PainelAreaRolavel(new CardLayout());
             PainelContas contas = new PainelContas(() -> { }, (tela, conta) -> destino.set(tela), conta -> { });
             PainelCadastroConta cadastro = new PainelCadastroConta((nome, saldo) -> { }, (nome, saldo) -> true);
-            telas.add(contas, "contas");
-            telas.add(cadastro, "cadastro");
+            telas.registrar("contas", contas);
+            telas.registrar("cadastro", cadastro);
             telas.mostrar("contas");
 
             encontrarBotao(contas, "Novo cliente e conta").doClick();
@@ -64,7 +64,8 @@ class FluxoCadastroUiTest {
             assertEquals(0, new BigDecimal("123.45").compareTo(contas.get(0).getSaldo()));
             JTable tabelaContas = encontrarTodos(painelContas, JTable.class).getFirst();
             assertEquals(1, tabelaContas.getRowCount());
-            assertEquals("Cliente de teste", tabelaContas.getValueAt(0, 0));
+            assertTrue(tabelaContas.getValueAt(0, 0).toString().startsWith("Conta principal"));
+            assertEquals("Cliente de teste", tabelaContas.getValueAt(0, 1));
             UUID id = contas.get(0).getIdentificador();
 
             ServicoBancario reaberto = new ServicoBancario(arquivoTemporario);

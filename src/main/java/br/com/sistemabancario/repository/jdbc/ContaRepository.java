@@ -23,12 +23,25 @@ public final class ContaRepository {
     }
 
     void salvar(Connection conexao, Conta conta) throws SQLException {
+        long numero = conta.getNumeroPublico() > 0 ? conta.getNumeroPublico() : proximoNumeroPublico(conexao);
         try (PreparedStatement comando = conexao.prepareStatement(
-                "INSERT INTO conta (id, cliente_id, saldo) VALUES (?, ?, ?)")) {
+                "INSERT INTO conta (id, cliente_id, saldo, numero_publico) VALUES (?, ?, ?, ?)")) {
             comando.setString(1, conta.getIdentificador().toString());
             comando.setString(2, conta.getTitular().getIdentificador().toString());
             comando.setString(3, conta.getSaldo().toString());
+            comando.setLong(4, numero);
             comando.executeUpdate();
+        }
+        conta.atribuirNumeroPublico(numero);
+    }
+
+    private static long proximoNumeroPublico(Connection conexao) throws SQLException {
+        try (PreparedStatement comando = conexao.prepareStatement(
+                "UPDATE conta_numero_seq SET proximo = proximo + 1 "
+                        + "WHERE id = 1 AND proximo > 0 RETURNING proximo - 1");
+             ResultSet resultado = comando.executeQuery()) {
+            if (!resultado.next()) throw new SQLException("Sequência de conta pública não foi inicializada.");
+            return resultado.getLong(1);
         }
     }
 
@@ -78,7 +91,7 @@ public final class ContaRepository {
 
     Optional<Conta> buscar(Connection conexao, UUID id) throws SQLException {
         try (PreparedStatement comando = conexao.prepareStatement(
-                "SELECT c.id, c.saldo, p.id AS cliente_id, p.nome AS cliente_nome " +
+                "SELECT c.id, c.saldo, c.numero_publico, p.id AS cliente_id, p.nome AS cliente_nome " +
                 "FROM conta c JOIN cliente p ON p.id = c.cliente_id WHERE c.id = ?")) {
             comando.setString(1, id.toString());
             try (ResultSet resultado = comando.executeQuery()) {
@@ -87,10 +100,21 @@ public final class ContaRepository {
         }
     }
 
+    public Optional<Conta> buscarPorNumeroPublico(long numero) {
+        try (Connection conexao = banco.abrir(); PreparedStatement comando = conexao.prepareStatement(
+                "SELECT c.id, c.saldo, c.numero_publico, p.id AS cliente_id, p.nome AS cliente_nome " +
+                "FROM conta c JOIN cliente p ON p.id = c.cliente_id WHERE c.numero_publico = ?")) {
+            comando.setLong(1, numero);
+            try (ResultSet resultado = comando.executeQuery()) {
+                return resultado.next() ? Optional.of(mapear(resultado)) : Optional.empty();
+            }
+        } catch (SQLException e) { throw new PersistenciaException("Não foi possível consultar a conta.", e); }
+    }
+
     public List<Conta> listar() {
         try (Connection conexao = banco.abrir(); PreparedStatement comando = conexao.prepareStatement(
-                "SELECT c.id, c.saldo, p.id AS cliente_id, p.nome AS cliente_nome " +
-                "FROM conta c JOIN cliente p ON p.id = c.cliente_id ORDER BY c.id");
+                "SELECT c.id, c.saldo, c.numero_publico, p.id AS cliente_id, p.nome AS cliente_nome " +
+                "FROM conta c JOIN cliente p ON p.id = c.cliente_id ORDER BY c.numero_publico");
              ResultSet resultado = comando.executeQuery()) {
             List<Conta> contas = new ArrayList<>();
             while (resultado.next()) contas.add(mapear(resultado));
@@ -101,6 +125,6 @@ public final class ContaRepository {
     private static Conta mapear(ResultSet resultado) throws SQLException {
         Cliente cliente = new Cliente(UUID.fromString(resultado.getString("cliente_id")), resultado.getString("cliente_nome"));
         return new Conta(UUID.fromString(resultado.getString("id")), cliente,
-                new BigDecimal(resultado.getString("saldo")));
+                new BigDecimal(resultado.getString("saldo")), resultado.getLong("numero_publico"));
     }
 }

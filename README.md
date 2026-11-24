@@ -1,94 +1,106 @@
-# Sistema Bancário com Transações Concorrentes
+# Sistema Bancário
 
-Projeto acadêmico em Java puro para demonstrar regras bancárias, race condition, sincronização, transferências sem deadlock, persistência JDBC com SQLite e exportação de extrato. A implementação mantém domínio, aplicação, persistência e simulação em pacotes separados.
+Aplicação acadêmica em Java para demonstrar operações bancárias, persistência SQLite e controle de concorrência. O projeto usa dados demonstrativos; não é um sistema financeiro de produção.
 
-## Pré-requisitos
+## Tecnologias e requisitos
 
-- JDK 21 (o alvo de compilação Maven é `--release 21`).
+- JDK 21 (o Maven compila com `--release 21`).
 - Apache Maven 3.9 ou superior.
-- O driver SQLite JDBC é baixado pelo Maven; não é necessário instalar um servidor de banco.
+- Java Swing para a interface gráfica.
+- SQLite via JDBC (`sqlite-jdbc`); não é necessário instalar um servidor de banco.
+- JUnit 5 para os testes.
 
-No macOS com Homebrew, se necessário:
+## Funcionalidades implementadas
 
-```bash
-brew install openjdk@21 maven
-```
+- Cadastro conjunto de cliente e conta, listagem de contas, consulta de saldo e exclusão de contas sem movimentações.
+- Depósito, saque e transferência entre contas, com validação de valores e saldo insuficiente.
+- Extrato por conta e exportação do extrato em TXT.
+- A visão geral busca no SQLite somente as seis movimentações mais recentes, sem carregar o extrato completo de cada conta.
+- Demonstrações de race condition, depósitos concorrentes e transferências opostas.
+- Interface Swing com navegação entre visão geral, contas, operações, extrato e chat informativo simulado.
+- Acesso individual para clientes e perfil administrativo; clientes veem somente suas contas, e o administrador consulta a lista consolidada.
+- Camada `AssistenteBancarioService` preparada para consultas de leitura; ainda não está ligada ao chat nem a um provedor de IA.
 
-Configure o JDK 21 como `JAVA_HOME` no terminal/IDE e confirme com `java -version` e `mvn -version`. Também é possível compilar com um JDK mais novo que aceite `--release 21`; a execução validada deve ser feita com JDK 21 quando disponível.
+Não há filtro de extrato por período, busca textual de clientes/contas ou integração com Gemini. A aplicação demonstra dados fictícios e não deve ser usada para movimentar dinheiro real.
 
-## Executar a demonstração
+## Executar com dados isolados
 
-Na raiz do projeto:
+### Demonstração de terminal
 
-```bash
-mvn clean compile exec:java
-```
-
-A demonstração cria contas fictícias novas a cada execução. As operações bancárias demonstrativas ficam no banco persistente `data/banco.db`; os depósitos e transferências artificiais da simulação concorrente ficam separados em `target/simulacao-concorrencia.db` e não aparecem no extrato de Ana. Para usar outro caminho para o banco principal:
-
-```bash
-mvn -Dbanco.db.path=/caminho/para/banco.db exec:java
-```
-
-O programa mostra depósito, saque, transferência, rejeição por saldo insuficiente, comparação da corrida controlada e depósitos/transferências concorrentes sincronizados. O cenário inseguro usa uma classe isolada e latches para garantir que as threads leiam o mesmo saldo antes de gravar.
-
-## Executar a interface gráfica Swing
-
-A interface é iniciada separadamente da demonstração de terminal e não cria contas nem executa operações automaticamente:
+O demonstrador grava o banco e os arquivos gerados em `target/demo/` por padrão, sem usar `data/banco.db` nem substituir arquivos versionados em `docs/`. Execuções repetidas reutilizam esse banco isolado e acrescentam novas contas fictícias; os dois relatórios de saída são atualizados:
 
 ```bash
-mvn -Dexec.mainClass=br.com.sistemabancario.ui.MainSwing exec:java
+mvn -Dexec.mainClass=br.com.sistemabancario.app.Main exec:java
 ```
 
-A janela usa o mesmo banco local `data/banco.db` (ou o caminho definido por `-Dbanco.db.path`). Na inicialização, a aplicação carrega o serviço e as contas em segundo plano; se o banco não puder ser aberto, apresenta o erro e não abre a janela principal. As consultas, operações bancárias e a exportação TXT também são executadas em segundo plano, com atualização Swing na EDT. O usuário confirma cada operação antes de enviá-la ao serviço.
+É possível escolher caminhos próprios com `-Dsistema.demo.dir=/caminho/isolado`. A propriedade `-Dbanco.db.path=/caminho/arquivo.db` substitui o caminho do banco principal da demonstração; evite apontá-la para bancos com dados que devam ser preservados. `-Dsistema.demo.simulacao.db.path=/caminho/arquivo.db` configura separadamente o banco da simulação concorrente.
 
-## Testes
+### Interface Swing
+
+A interface usa `data/banco.db` por padrão quando iniciada sem configuração. Para executar com um banco isolado dentro do diretório de build:
 
 ```bash
-mvn clean test
+mvn -Dbanco.db.path=target/demo/interface.db -Dexec.mainClass=br.com.sistemabancario.ui.MainSwing exec:java
 ```
 
-Os testes criam bancos SQLite temporários e independentes. Cobrem regras de conta, persistência e reabertura do banco, ausência de registros para operações rejeitadas, depósitos concorrentes, transferências opostas sem deadlock e a race condition controlada.
+### Perfis de acesso
 
-## Banco e artefatos
+- Clientes criam usuário, senha e sua conta no formulário de acesso. Novas senhas precisam ter pelo menos 10 caracteres e são armazenadas como hash PBKDF2 com salt individual. Senhas já existentes continuam válidas para autenticação.
+- Na primeira inicialização sem administrador, a tela de acesso oferece a configuração do perfil administrativo com nome, usuário e senha. O cadastro é fechado após a primeira criação; administradores adicionais continuam sujeitos à autorização administrativa.
+- O perfil administrador não cria conta bancária automaticamente. Ele pode consultar a tabela geral, os saldos consolidados e excluir contas sem movimentações; operações financeiras continuam disponíveis em sessões de cliente.
+- A autorização fica na fachada `ServicoBancarioAutorizado`, além dos controles da interface. O destino de uma transferência é informado por identificador, sem carregar saldos ou nomes de outros clientes.
+- Contas criadas antes da autenticação não possuem credenciais vinculadas. Elas continuam preservadas e aparecem para o administrador, mas não podem ser acessadas por clientes até existir um processo administrativo de associação de acesso.
+- As sessões existem somente na memória do processo e não expiram automaticamente. Este mecanismo é adequado à demonstração local, não a uma implantação financeira de produção.
 
-- Banco SQLite padrão: `data/banco.db` (pode ser configurado por `-Dbanco.db.path=...`).
-- Banco temporário da simulação concorrente: `target/simulacao-concorrencia.db`.
-- Script de tabelas: `src/main/resources/db/schema.sql`; é executado automaticamente na inicialização.
-- Extrato de exemplo: `docs/extrato-exemplo.txt`, gerado pela demonstração.
-- Relatório com o resultado observado da corrida: `docs/relatorio-concorrencia.md`, gerado pela demonstração. Ele não contém valores presumidos: o programa grava o saldo esperado e o efetivamente observado.
+Para iniciar a interface com banco isolado, passe um caminho SQLite temporário:
 
-As contas e os clientes são persistidos. Cada depósito, saque ou transferência grava o saldo alterado e a transação correspondente dentro do mesmo commit JDBC. Em falha de SQL, a operação é revertida e a conta em memória não é alterada. Valores monetários são armazenados como texto decimal para preservar a precisão de `BigDecimal`.
+```bash
+mvn -Dbanco.db.path=/tmp/sistema-bancario.db -Dexec.mainClass=br.com.sistemabancario.ui.MainSwing exec:java
+```
 
-## Organização e requisitos
+Os dados em `target/demo/` são locais à demonstração. O comando `mvn clean` remove o diretório `target`; não o execute se precisar conservar esse banco demonstrativo.
 
-- `domain/`: `Cliente`, `Conta` e `Transacao`; `Conta` sincroniza alterações de saldo e adquire locks de transferência em ordem crescente de UUID.
-- `service/`: `ServicoBancario` coordena validação, locks, persistência e geração de extrato/relatório.
-- `repository/jdbc/`: conexão SQLite/JDBC e repositórios de clientes, contas e transações.
-- `simulacao/`: implementação insegura isolada e cenários concorrentes controlados.
-- `app/Main.java`: demonstração reproduzível pelo terminal.
-- `ui/MainSwing.java`, `ui/JanelaPrincipal.java` e painéis: aplicação desktop; `ui/ControladorBancario.java` encaminha os casos de uso sem dependência de Swing.
-- `src/test/java/`: testes unitários e de integração JUnit 5.
+## Testes e compilação
 
-### Mapa dos requisitos do trabalho
+```bash
+mvn test
+mvn compile
+```
 
-| Requisito | Implementação |
-|---|---|
-| Clientes, contas e operações com `BigDecimal` | `domain/` e `service/ServicoBancario.java` |
-| Race condition antes da correção | `simulacao/ContaInsegura.java` e `demonstrarRaceCondition` |
-| Depósitos concorrentes seguros | métodos sincronizados de `Conta` e testes de `ServicoBancario` |
-| Transferência oposta sem deadlock | locks por UUID em `Conta` e `ServicoBancario.transferir` |
-| JDBC, tabelas e persistência atômica | `repository/jdbc/` e `src/main/resources/db/schema.sql` |
-| Consulta e exportação do extrato | `TransacaoRepository` e `service/ExportadorExtrato.java` |
-| Demonstração e artefatos | `app/Main.java`, `docs/extrato-exemplo.txt` e `docs/relatorio-concorrencia.md` |
+Os testes de persistência usam bancos temporários (`@TempDir`) e não precisam acessar `data/banco.db`. `mvn test` preserva arquivos já existentes em `target`; `mvn clean` remove o conteúdo desse diretório.
 
-## Limitações conhecidas
+## Persistência SQLite
 
-- O lock de Java protege operações dentro desta instância/processo. A atualização condicional do saldo e a transação SQLite protegem a persistência contra divergências observadas no banco; não há coordenação distribuída entre vários processos de aplicação.
-- SQLite serializa escritas. `busy_timeout` ajuda a aguardar escritores concorrentes, mas um sistema bancário de produção exigiria banco servidor, observabilidade e políticas de retry.
-- O demonstrador inseguro força deliberadamente uma leitura compartilhada para deixar a perda de atualização reproduzível; não mede a probabilidade de uma corrida em carga aleatória.
-- As contas são mutáveis no domínio; para manter o banco sincronizado, as operações da aplicação devem passar por `ServicoBancario`.
+- Caminho padrão: `data/banco.db`, configurável com a propriedade de sistema `banco.db.path`.
+- O esquema está em `src/main/resources/db/schema.sql` e é inicializado pelo serviço ao abrir o banco.
+- Os saldos são armazenados como texto decimal para preservar a precisão de `BigDecimal`.
+- Cada depósito, saque ou transferência persiste os saldos e a transação no mesmo commit JDBC. Em falha de gravação, a transação é revertida antes de atualizar o estado em memória.
+- As consultas e operações da interface são executadas em segundo plano com `SwingWorker`.
 
-## Evoluções futuras
+## Organização do projeto
 
-Spring Boot, API REST, autenticação e AWS podem ser adicionados depois, mantendo as regras do domínio e trocando ou ampliando os adaptadores de persistência.
+```text
+src/main/java/br/com/sistemabancario/
+├── app/          demonstração de terminal
+├── domain/       Cliente, Conta e Transacao
+├── exception/    exceções de persistência
+├── repository/   acesso SQLite/JDBC
+├── service/      casos de uso bancários, exportação e consultas do assistente
+├── simulacao/    cenários didáticos de concorrência
+└── ui/           aplicação Swing, painéis e controlador
+src/main/resources/db/schema.sql
+src/test/java/    testes unitários, de persistência e de interface
+```
+
+O domínio define as entidades e validações. `ServicoBancario` coordena regras, sincronização e persistência; os repositórios executam consultas JDBC parametrizadas. `AutenticacaoService` emite sessões autenticadas, e `ServicoBancarioAutorizado` aplica o papel e a titularidade aos casos de uso usados pela interface. A porta do assistente é fornecida apenas para sessões de cliente e não contém operações de escrita.
+
+## Limitações e cuidados
+
+- O chat é simulado: responde a dúvidas gerais e não consulta contas nem realiza operações.
+- A camada de consulta do assistente não envia dados a serviços externos, rejeita sessões administrativas e não oferece operações de escrita. A integração com IA ainda não foi implementada.
+- A sincronização por locks protege operações dentro de uma instância da aplicação. Não existe coordenação distribuída entre vários processos usando o mesmo arquivo SQLite.
+- SQLite serializa escritas; `busy_timeout` aguarda escritores concorrentes por tempo limitado. Um sistema de produção exigiria controles operacionais e uma arquitetura de persistência apropriada.
+- O demonstrador inseguro força uma race condition para fins didáticos; não mede a frequência de falhas sob carga aleatória.
+- `Conta` expõe métodos mutáveis no domínio. Para manter saldo em memória e persistência coerentes, operações da aplicação devem passar por `ServicoBancario`.
+
+Os arquivos em `docs/` são artefatos existentes e não são substituídos pela demonstração atual, que grava seus resultados em `target/demo/`.

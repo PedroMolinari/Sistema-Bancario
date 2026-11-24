@@ -2,6 +2,7 @@ package br.com.sistemabancario.service;
 
 import br.com.sistemabancario.domain.Cliente;
 import br.com.sistemabancario.domain.Conta;
+import br.com.sistemabancario.domain.Transacao;
 import br.com.sistemabancario.exception.PersistenciaException;
 import br.com.sistemabancario.repository.jdbc.ConexaoBanco;
 import br.com.sistemabancario.simulacao.SimuladorConcorrencia;
@@ -12,6 +13,7 @@ import java.math.BigDecimal;
 import java.nio.file.Path;
 import java.nio.file.Files;
 import java.util.List;
+import java.util.Comparator;
 import java.sql.Statement;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -38,6 +40,57 @@ class ServicoBancarioTest {
         assertSaldo("15.00", recarregado.obterConta(destino.getIdentificador()));
         assertEquals(3, recarregado.consultarExtrato(origem.getIdentificador()).size());
         assertEquals(1, recarregado.consultarExtrato(destino.getIdentificador()).size());
+    }
+
+    @Test
+    void numerosPublicosSaoUnicosPersistentesEPermitemTransferirSemUuid() {
+        Path arquivo = diretorioTemporario.resolve("numero-publico.db");
+        ServicoBancario banco = new ServicoBancario(arquivo);
+        Conta origem = banco.criarConta(new Cliente("Ana"), new BigDecimal("20.00"));
+        Conta destino = banco.criarConta(new Cliente("Bia"), BigDecimal.ZERO);
+        Conta removida = banco.criarConta(new Cliente("Conta removida"), BigDecimal.ZERO);
+        assertTrue(origem.getNumeroPublico() > 0);
+        assertNotEquals(origem.getNumeroPublico(), destino.getNumeroPublico());
+
+        banco.transferirPorNumeroPublico(origem.getIdentificador(), destino.getNumeroPublico(), BigDecimal.ONE);
+        ServicoBancario recarregado = new ServicoBancario(arquivo);
+        assertEquals(origem.getNumeroPublico(), recarregado.obterConta(origem.getIdentificador()).getNumeroPublico());
+        assertEquals(destino.getNumeroPublico(), recarregado.obterConta(destino.getIdentificador()).getNumeroPublico());
+        assertSaldo("19.00", recarregado.obterConta(origem.getIdentificador()));
+        assertSaldo("1.00", recarregado.obterConta(destino.getIdentificador()));
+        assertThrows(IllegalArgumentException.class,
+                () -> recarregado.transferirPorNumeroPublico(origem.getIdentificador(), 999999999L, BigDecimal.ONE));
+        banco.excluirConta(removida.getIdentificador());
+        Conta nova = banco.criarConta(new Cliente("Caio"), BigDecimal.ZERO);
+        assertTrue(nova.getNumeroPublico() > removida.getNumeroPublico(),
+                "O número público não deve ser reutilizado após excluir uma conta.");
+    }
+
+    @Test
+    void consultaMovimentacoesRecentesOrdenadasLimitadasESemDuplicarTransferencias() {
+        ServicoBancario banco = new ServicoBancario(diretorioTemporario.resolve("recentes.db"));
+        Conta origem = banco.criarConta(new Cliente("Origem fictícia"), new BigDecimal("100.00"));
+        Conta destino = banco.criarConta(new Cliente("Destino fictício"), BigDecimal.ZERO);
+        banco.depositar(origem.getIdentificador(), BigDecimal.ONE);
+        banco.transferir(origem.getIdentificador(), destino.getIdentificador(), BigDecimal.ONE);
+        banco.depositar(destino.getIdentificador(), BigDecimal.TEN);
+        banco.sacar(origem.getIdentificador(), BigDecimal.ONE);
+        banco.transferir(destino.getIdentificador(), origem.getIdentificador(), BigDecimal.ONE);
+
+        List<Transacao> historicoSemDuplicatas = java.util.stream.Stream.of(
+                        banco.consultarExtrato(origem.getIdentificador()),
+                        banco.consultarExtrato(destino.getIdentificador()))
+                .flatMap(List::stream)
+                .distinct()
+                .sorted(Comparator.comparing(Transacao::dataHora)
+                        .thenComparing(transacao -> transacao.identificador().toString())
+                        .reversed())
+                .toList();
+
+        assertEquals(historicoSemDuplicatas.subList(0, 3), banco.consultarMovimentacoesRecentes(3));
+        assertEquals(5, banco.consultarMovimentacoesRecentes(20).size());
+        assertThrows(IllegalArgumentException.class, () -> banco.consultarMovimentacoesRecentes(0));
+        assertThrows(IllegalArgumentException.class, () -> banco.consultarMovimentacoesRecentes(-1));
     }
 
     @Test

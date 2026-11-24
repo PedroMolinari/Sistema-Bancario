@@ -39,18 +39,18 @@ final class PainelCadastroConta extends JPanel {
         cartao.add(titulo);
         cartao.add(EstiloSwing.rotuloCampo("Nome do titular"));
         EstiloSwing.campo(nome);
-        nome.setPreferredSize(new Dimension(280, 48));
+        nome.setPreferredSize(new Dimension(280, EstiloSwing.TAMANHO_CAMPO.height));
         cartao.add(nome);
         cartao.add(EstiloSwing.rotuloCampo("Saldo inicial (R$)"));
         EstiloSwing.campo(saldo);
-        saldo.setPreferredSize(new Dimension(280, 48));
+        saldo.setPreferredSize(new Dimension(280, EstiloSwing.TAMANHO_CAMPO.height));
         cartao.add(saldo);
         JLabel dica = new JLabel("Use ponto ou vírgula como separador decimal.");
         dica.setForeground(EstiloSwing.SECUNDARIO);
         dica.setBorder(BorderFactory.createEmptyBorder(3, 0, 3, 0));
         cartao.add(dica);
 
-        JButton confirmar = EstiloSwing.botao("Cadastrar cliente e conta", true);
+        JButton confirmar = EstiloSwing.botaoComIcone("Cadastrar cliente e conta", "cadastro", true);
         confirmar.addActionListener(evento -> {
             String titular = nome.getText().trim();
             if (titular.isEmpty()) {

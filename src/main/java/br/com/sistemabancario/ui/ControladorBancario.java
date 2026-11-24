@@ -44,8 +44,16 @@ public final class ControladorBancario {
         return servico.transferir(origemId, destinoId, valor);
     }
 
+    public Transacao transferirPorNumeroPublico(UUID origemId, long destinoNumero, BigDecimal valor) {
+        return servico.transferirPorNumeroPublico(origemId, destinoNumero, valor);
+    }
+
     public List<Transacao> consultarExtrato(UUID contaId) {
         return servico.consultarExtrato(contaId);
+    }
+
+    public List<Transacao> consultarMovimentacoesRecentes(int limite) {
+        return servico.consultarMovimentacoesRecentes(limite);
     }
 
     public Path exportarExtrato(UUID contaId, Path arquivo) {

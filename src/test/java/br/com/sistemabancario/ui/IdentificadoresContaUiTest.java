@@ -12,26 +12,28 @@ import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JTable;
+import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 class IdentificadoresContaUiTest {
     @Test
-    void listasSeletoresEExtratoRenderizamIdsCurtosEEstaveis() throws Exception {
+    void listasSeletoresEExtratoExibemNumeroPublicoSemVazarUuidInterno() throws Exception {
         SwingUtilities.invokeAndWait(() -> {
             UUID origemId = UUID.fromString("12345678-1234-5678-9abc-def012345678");
             UUID destinoId = UUID.fromString("87654321-4321-8765-cba9-876543210fed");
-            Conta origem = new Conta(origemId, new Cliente("Ana"), BigDecimal.TEN);
-            Conta destino = new Conta(destinoId, new Cliente("Bia"), BigDecimal.ZERO);
+            Conta origem = new Conta(origemId, new Cliente("Ana"), BigDecimal.TEN, 123456);
+            Conta destino = new Conta(destinoId, new Cliente("Bia"), BigDecimal.ZERO, 654321);
             String origemCurto = origem.getIdentificadorCurto();
             assertEquals(origemCurto, Conta.formatarIdentificador(origemId));
 
             PainelContas painelContas = new PainelContas(() -> { }, (tela, conta) -> { }, conta -> { });
             painelContas.definirContas(List.of(origem, destino));
             JTable tabelaContas = encontrar(painelContas, JTable.class);
-            assertEquals(origemCurto, tabelaContas.getModel().getValueAt(0, 1));
-            assertNotEquals(origemId.toString(), tabelaContas.getModel().getValueAt(0, 1));
+            assertEquals("Conta principal · 123456", tabelaContas.getModel().getValueAt(0, 0));
+            assertEquals("Ana", tabelaContas.getModel().getValueAt(0, 1));
+            assertFalse(tabelaContas.getModel().getValueAt(0, 0).toString().contains(origemId.toString()));
 
             PainelExtrato painelExtrato = new PainelExtrato(conta -> { }, (conta, arquivo) -> { });
             painelExtrato.definirContas(List.of(origem, destino));
@@ -39,14 +41,21 @@ class IdentificadoresContaUiTest {
             JComboBox<Conta> seletor = (JComboBox<Conta>) encontrar(painelExtrato, JComboBox.class);
             JLabel renderizado = (JLabel) seletor.getRenderer().getListCellRendererComponent(
                     new JList<>(), origem, -1, false, false);
-            assertTrue(renderizado.getText().contains(origemCurto));
+            assertTrue(renderizado.getText().contains("Conta principal (123456) — Ana"));
             assertFalse(renderizado.getText().contains(origemId.toString()));
+
+            PainelTransferencia painelTransferencia = new PainelTransferencia(
+                    (contaOrigem, numeroDestino, valor) -> { }, true);
+            JTextField destinoPublico = encontrar(painelTransferencia, JTextField.class);
+            assertEquals("Número da conta de destino",
+                    destinoPublico.getAccessibleContext().getAccessibleName());
+            assertFalse(destinoPublico.getToolTipText().contains("UUID"));
 
             painelExtrato.definirTransacoes(List.of(new Transacao(UUID.randomUUID(),
                     Transacao.Tipo.TRANSFERENCIA, BigDecimal.ONE, LocalDateTime.now(), origemId, destinoId)));
             JTable tabelaExtrato = encontrar(painelExtrato, JTable.class);
-            assertEquals(origemCurto, tabelaExtrato.getModel().getValueAt(0, 3));
-            assertEquals(destino.getIdentificadorCurto(), tabelaExtrato.getModel().getValueAt(0, 4));
+            assertEquals("Conta 123456", tabelaExtrato.getModel().getValueAt(0, 3));
+            assertEquals("Conta 654321", tabelaExtrato.getModel().getValueAt(0, 4));
         });
     }
 

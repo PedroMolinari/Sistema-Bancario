@@ -3,11 +3,31 @@ CREATE TABLE IF NOT EXISTS cliente (
     nome TEXT NOT NULL CHECK (length(trim(nome)) > 0)
 );
 
+CREATE TABLE IF NOT EXISTS usuario_acesso (
+    id TEXT PRIMARY KEY NOT NULL,
+    nome TEXT NOT NULL DEFAULT '',
+    login TEXT NOT NULL,
+    login_normalizado TEXT NOT NULL UNIQUE,
+    senha_hash TEXT NOT NULL,
+    senha_salt TEXT NOT NULL,
+    perfil TEXT NOT NULL CHECK (perfil IN ('ADMINISTRADOR', 'CLIENTE')),
+    cliente_id TEXT,
+    FOREIGN KEY (cliente_id) REFERENCES cliente(id),
+    CHECK ((perfil = 'ADMINISTRADOR' AND cliente_id IS NULL)
+        OR (perfil = 'CLIENTE' AND cliente_id IS NOT NULL))
+);
+
 CREATE TABLE IF NOT EXISTS conta (
     id TEXT PRIMARY KEY NOT NULL,
     cliente_id TEXT NOT NULL,
     saldo TEXT NOT NULL,
+    numero_publico INTEGER,
     FOREIGN KEY (cliente_id) REFERENCES cliente(id)
+);
+
+CREATE TABLE IF NOT EXISTS conta_numero_seq (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    proximo INTEGER NOT NULL CHECK (proximo > 0)
 );
 
 CREATE TABLE IF NOT EXISTS transacao (

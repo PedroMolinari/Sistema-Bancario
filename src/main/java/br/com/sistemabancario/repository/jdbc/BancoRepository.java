@@ -16,12 +16,14 @@ public final class BancoRepository {
     private final ClienteRepository clientes;
     private final ContaRepository contas;
     private final TransacaoRepository transacoes;
+    private final UsuarioRepository usuarios;
 
     public BancoRepository(ConexaoBanco banco) {
         this.banco = banco;
         clientes = new ClienteRepository(banco);
         contas = new ContaRepository(banco);
         transacoes = new TransacaoRepository(banco);
+        usuarios = new UsuarioRepository(banco);
         banco.inicializar();
     }
 
@@ -36,13 +38,40 @@ public final class BancoRepository {
         });
     }
 
+    public void criarContaComAcesso(Conta conta, UsuarioPersistido usuario) {
+        banco.emTransacao(conexao -> {
+            clientes.salvar(conexao, conta.getTitular());
+            contas.salvar(conexao, conta);
+            usuarios.salvar(conexao, usuario);
+            return null;
+        });
+    }
+
+    public void criarAdministrador(UsuarioPersistido usuario) {
+        banco.emTransacao(conexao -> {
+            if (usuarios.existeAdministrador(conexao)) {
+                throw new IllegalStateException("O administrador inicial já foi configurado.");
+            }
+            usuarios.salvar(conexao, usuario);
+            return null;
+        });
+    }
+
+    public Optional<UsuarioPersistido> buscarUsuario(String loginNormalizado) {
+        return usuarios.buscarPorLogin(loginNormalizado);
+    }
+
+    public boolean administradorConfigurado() { return usuarios.existeAdministrador(); }
+
     public Optional<Conta> buscarConta(UUID id) { return contas.buscar(id); }
+    public Optional<Conta> buscarContaPorNumeroPublico(long numero) { return contas.buscarPorNumeroPublico(numero); }
     public List<Conta> listarContas() { return contas.listar(); }
     public boolean contaPossuiMovimentacoes(UUID id) { return contas.possuiMovimentacoes(id); }
     public void excluirConta(UUID id) {
         banco.emTransacao(conexao -> { contas.excluir(conexao, id); return null; });
     }
     public List<Transacao> listarTransacoes(UUID contaId) { return transacoes.listarPorConta(contaId); }
+    public List<Transacao> listarTransacoesRecentes(int limite) { return transacoes.listarRecentes(limite); }
 
     public void depositar(UUID contaId, java.math.BigDecimal anterior,
                           java.math.BigDecimal novo, Transacao transacao) {
